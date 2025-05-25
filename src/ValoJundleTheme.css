@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Beaufort+for+LOL&display=swap');
+
+.valojundle-bg {
+  min-height: 100vh;
+  width: 100vw;
+  background: url('/lol-bg.webp') center/cover no-repeat fixed, #181c24;
+  font-family: 'Beaufort for LOL', 'Segoe UI', Arial, sans-serif;
+  padding-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+}
+
+.valojundle-title {
+  text-align: center;
+  font-size: 3rem;
+  margin: 32px 0 24px 0;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 8px #000;
+}
+
+.vjl-logo {
+  width: 320px;
+  margin: 32px 0 16px 0;
+  filter: drop-shadow(0 0 16px #000a);
+  z-index: 2;
+}
+
+.vjl-content {
+  width: 100%;
+  margin: 0 auto;
+  z-index: 2;
+}
+
+@media (max-width: 600px) {
+  .vjl-logo {
+    width: 70vw;
+    margin: 24px 0 8px 0;
+  }
+  .vjl-content {
+    max-width: 98vw;
+  }
+}

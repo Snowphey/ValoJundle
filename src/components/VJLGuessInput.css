@@ -1,0 +1,94 @@
+/* VJLGuessInput.css */
+.vjl-guess-input {
+  margin: 0 auto 24px auto;
+  max-width: 420px;
+  position: relative;
+}
+.vjl-guess-input-row {
+  display: flex;
+  align-items: center;
+  position: relative;
+  border-right: none;
+  box-shadow: none;
+  padding: 0;
+  height: 48px;
+}
+.vjl-guess-input input {
+  padding: 0 0 0 16px;
+  border: none;
+  outline: none;
+  background-image: url("input-guess.webp");  
+  background-repeat: no-repeat;  
+  background-position: 0% 0%;
+  background-size: 100% 100%;
+  color: #f5e6c8;
+  font-size: 1.1rem;
+  font-family: 'Friz Quadrata Std', Mobilo, Helvetica, Arial, sans-serif;
+  height: 48px;
+  border-radius: 0;
+  box-shadow: none;
+}
+.vjl-guess-input input::placeholder {
+  color: #bfc6ce;
+  opacity: 1;
+}
+.vjl-guess-input button[type="submit"] { 
+  border: none;
+  outline: none;
+  background-image: url("guess-arrow.webp");  
+  background-repeat: no-repeat;  
+  background-position: 0% 0%;
+  background-size: 100% 100%;
+  color: #f5e6c8;
+  font-size: 1.1rem;
+  font-family: 'Friz Quadrata Std', Mobilo, Helvetica, Arial, sans-serif;
+  height: 48px;
+  width: 80px;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0 18px;
+}
+.vjl-guess-input button[type="submit"]:hover {
+  filter: brightness(1.1);
+}
+.vjl-guess-input button[type="submit"] img {
+  display: none;
+}
+.suggestions-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 48px;
+  background: #23272e;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 2px 8px #000a;
+  z-index: 10;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.suggestions-list li {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: #ffd700;
+  font-size: 1.05rem;
+  font-family: 'Friz Quadrata Std', Mobilo, Helvetica, Arial, sans-serif;
+  border-bottom: 2px solid #3336;
+  transition: background 0.15s;
+}
+.suggestions-list li:last-child {
+  border-bottom: none;
+}
+.suggestions-list li:hover {
+  background: #181c24;
+}
+.suggestions-list img {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  margin-right: 10px;
+  border: 2px solid #ffd700;
+  background: #181c24;
+}

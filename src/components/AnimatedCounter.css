@@ -1,0 +1,14 @@
+.animated-digit-wrapper {
+  position: relative;
+  width: 1ch;
+  height: 1.3em;
+  display: inline-block;
+  overflow: hidden;
+}
+.animated-digit {
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  will-change: transform;
+}

@@ -1,0 +1,41 @@
+.tooltip-box {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 120px;
+  max-width: 320px;
+  background: rgba(24, 22, 34, 0.98);
+  color: #fff;
+  font-family: 'Beaufort', 'Segoe UI', serif;
+  font-size: 1rem;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 2px solid #c9a86a;
+  box-shadow: 0 4px 16px #000b;
+  z-index: 1000;
+  white-space: pre-line;
+  pointer-events: none;
+  opacity: 0.98;
+  transition: opacity 0.18s, transform 0.18s;
+}
+.tooltip-top {
+  bottom: 100%;
+  margin-bottom: 10px;
+  animation: tooltip-fade-in-up 0.18s;
+}
+.tooltip-bottom {
+  top: 100%;
+  margin-top: 10px;
+  animation: tooltip-fade-in-down 0.18s;
+}
+@keyframes tooltip-fade-in-up {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 0.98; transform: translateX(-50%) translateY(0); }
+}
+@keyframes tooltip-fade-in-down {
+  from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+  to { opacity: 0.98; transform: translateX(-50%) translateY(0); }
+}
+.tooltip-wrapper:focus .tooltip-box {
+  opacity: 0.98;
+}

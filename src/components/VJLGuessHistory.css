@@ -1,0 +1,23 @@
+/* VJLGuessHistory.css */
+.vjl-guess-history {
+  margin: 0 auto;
+  max-width: 60em;
+  background: rgba(24,28,36,0.85);
+  border-radius: 12px;
+  padding: 16px 0 8px 0;
+  box-shadow: 0 2px 16px #000a;
+  margin-bottom: 24px;
+}
+.vjl-guess-history-row,
+.vjl-guess-history-header {
+  justify-content: center;
+  column-gap: 0.25em;
+  font-weight: bold;
+  font-size: 1em;
+  background: none; 
+  margin-bottom: 1em;
+}
+
+.vjl-guess-history-row {
+  background: none;
+}
