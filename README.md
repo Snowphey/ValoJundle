@@ -21,7 +21,7 @@ ValoJundle est un jeu web inspiré des jeux de type "Wordle" mais adapté à la 
 ### Installation
 1. Clone le repo :
    ```powershell
-   git clone https://github.com/Snowphey/ValoJundle
+   git clone https://github.com/Snowphey/ValoJundle.git
    cd ValoJundle
    ```
 2. Installe les dépendances :
@@ -64,6 +64,6 @@ Le site sera accessible sur http://localhost:5173
 ## Crédits
 Sophie Longy
 
-<p align="center" width="100%">
+<p align="center" width="20%">
     <img src="https://github.com/Snowphey/ValoJundle/blob/851567866d905eba695cf09c08799f52569e13ab/public/pfps/sophie.webp" alt="sophie_pfp"/ width=700>
 </p>
