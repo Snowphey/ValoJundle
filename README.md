@@ -63,9 +63,3 @@ Le site sera accessible sur http://localhost:5173
 
 ## Crédits
 Sophie Longy
-
-<p align="center" width="100%">
-    <div align="center">
-        <img src="https://github.com/Snowphey/ValoJundle/blob/851567866d905eba695cf09c08799f52569e13ab/public/pfps/sophie.webp" alt="sophie_pfp" width=600/>
-    </div>
-</p>
