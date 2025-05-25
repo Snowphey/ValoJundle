@@ -1,54 +1,69 @@
-# React + TypeScript + Vite
+# ValoJundle
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+ValoJundle est un jeu web inspiré des jeux de type "Wordle" mais adapté à la communauté VJL (Valo Jungle League). Chaque jour, tente de deviner le membre mystère ou la citation du Discord !
 
-Currently, two official plugins are available:
+<p align="center" width="100%">
+    <img src="https://github.com/Snowphey/ValoJundle/blob/851567866d905eba695cf09c08799f52569e13ab/public/valojundle%20logo.png" alt="valojundle_logo"/ width=700>
+</p>
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Fonctionnalités principales
+- **Deux modes de jeu** :
+  - **Classique** : devine le membre mystère à partir de ses attributs (rôle, région, couleur de cheveux, etc.).
+  - **Citation** : retrouve qui a écrit la citation du jour sur le Discord !
+- **Historique des essais** et partage facile de ta performance.
+- **Classement quotidien** : vois combien de personnes ont trouvé la bonne réponse.
 
-## Expanding the ESLint configuration
+## Installation et lancement
+### Prérequis
+- Node.js >= 18
+- npm
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Installation
+1. Clone le repo :
+   ```powershell
+   git clone https://github.com/Snowphey/ValoJundle
+   cd ValoJundle
+   ```
+2. Installe les dépendances :
+   ```powershell
+   npm install
+   ```
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+### Lancement du backend (API)
+Dans un terminal :
+```powershell
+node backend.js
 ```
+Le backend écoute par défaut sur http://localhost:3001
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+### Lancement du frontend (Vite)
+Dans un autre terminal :
+```powershell
+npm run dev
 ```
+Le site sera accessible sur http://localhost:5173
+
+> Les URLs sont configurables dans le fichier `.env`.
+
+## Structure du projet
+- `backend.js` : serveur Express pour la logique de jeu et la persistance.
+- `src/` : code source React (pages, composants, utilitaires).
+- `public/` : images, assets statiques.
+- `src/data/vjl.json` : base de données des membres VJL.
+
+## Personnalisation
+- Ajoute/modifie les membres dans `src/data/vjl.json`.
+- Change les images dans `public/`.
+
+## Dépendances principales
+- [React](https://react.dev/)
+- [Vite](https://vitejs.dev/)
+- [Express](https://expressjs.com/)
+- [canvas-confetti](https://www.npmjs.com/package/canvas-confetti)
+
+## Crédits
+Sophie Longy
+
+<p align="center" width="100%">
+    <img src="https://github.com/Snowphey/ValoJundle/blob/851567866d905eba695cf09c08799f52569e13ab/public/pfps/sophie.webp" alt="sophie_pfp"/ width=700>
+</p>
