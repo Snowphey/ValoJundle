@@ -180,6 +180,8 @@ app.post('/api/game/:userId/:mode', (req, res) => {
   res.json({ ok: true });
 });
 
+app.use(express.static('dist'));
+
 app.listen(PORT, () => {
   console.log(`ValoJundle backend running on port ${PORT}`);
 });
