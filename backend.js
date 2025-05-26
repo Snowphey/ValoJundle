@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
-import vjlData from './src/data/vjl.json' assert { type: 'json' };
+import vjlData from './src/data/vjl.json' with { type: 'json' };
 
 const app = express();
 const PORT = process.env.PORT || 3001;
