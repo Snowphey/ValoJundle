@@ -85,7 +85,7 @@ const ClassicPage: React.FC = () => {
     let stop = false;
     async function fetchCount() {
       try {
-        const res = await fetch(`http://localhost:3001/api/game-count/${GAME_MODE}`);
+        const res = await fetch(`/api/game-count/${GAME_MODE}`);
         const data = await res.json();
         if (!stop) setWinnersCount(data.count);
       } catch {}
