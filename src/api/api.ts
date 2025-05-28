@@ -2,13 +2,14 @@
 // Fusion frontend pour tous les appels HTTP (React)
 import type { VJLPerson } from '../types/VJLPerson.ts';
 import vjlData from '../data/vjl.json';
+import { v4 as uuidv4 } from 'uuid';
 
 const API_URL = import.meta.env.VITE_API_URL + '/api';
 
 function getOrCreateUserId() {
   let userId = localStorage.getItem('valojundle-userid');
   if (!userId) {
-    userId = crypto.randomUUID();
+    userId = uuidv4();
     localStorage.setItem('valojundle-userid', userId);
   }
   return userId;
