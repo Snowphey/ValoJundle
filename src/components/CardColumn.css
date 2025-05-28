@@ -138,3 +138,46 @@
 .card-birthdate-incorrect {
   border-radius: 0 !important;
 }
+
+@media (max-width: 600px) {
+  .card-columns-wrapper {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 0;
+    width: 100vw;
+    max-width: 100vw;
+    padding-bottom: 8px;
+  }
+  .card-label {
+    font-size: 0.7rem;
+    margin-bottom: 2px;
+  }
+  .card-value {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .card-columns-wrapper {
+    width: 100vw;
+    max-width: 100vw;
+    padding-bottom: 4px;
+  }
+  .card-column {
+    font-size: 0.7rem;
+    margin: 0 1px;
+  }
+  .card-label {
+    font-size: 0.6rem;
+    margin-bottom: 1px;
+  }
+  .card-value {
+    font-size: 0.7rem;
+  }
+  .pfp-tooltip {
+    font-size: 0.7em;
+    padding: 2px 4px;
+  }
+}

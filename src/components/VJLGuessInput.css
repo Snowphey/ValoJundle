@@ -66,6 +66,8 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  max-height: 46vh;
+  overflow-y: auto;
 }
 .suggestions-list li {
   display: flex;
@@ -91,4 +93,54 @@
   margin-right: 10px;
   border: 2px solid #ffd700;
   background: #181c24;
+}
+
+@media (max-width: 600px) {
+  .vjl-guess-input {
+    max-width: 88vw;
+    margin: 0 auto 12px auto;
+  }
+  .vjl-guess-input-row {
+    height: 36px;
+  }
+  .vjl-guess-input input {
+    font-size: 0.95rem;
+    height: 36px;
+    padding-left: 8px;
+  }
+  .vjl-guess-input button[type="submit"] {
+    font-size: 0.95rem;
+    height: 36px;
+    width: 48px;
+    padding: 0 8px;
+  }
+  .suggestions-list img {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@media (max-width: 400px) {
+  .vjl-guess-input {
+    max-width: 98vw;
+    margin: 0 auto 8px auto;
+  }
+  .vjl-guess-input-row {
+    height: 30px;
+  }
+  .vjl-guess-input input {
+    font-size: 0.85rem;
+    height: 30px;
+    padding-left: 4px;
+  }
+  .vjl-guess-input button[type="submit"] {
+    font-size: 0.85rem;
+    height: 30px;
+    width: 36px;
+    padding: 0 4px;
+  }
+  .suggestions-list img {
+    width: 20px;
+    height: 20px;
+  }
 }

@@ -168,3 +168,69 @@
   border-color: #e6c559;
   outline: none;
 }
+@media (max-width: 600px) {
+  .victory-box-gradient {
+    padding: 1rem;
+    margin: 1rem auto 0.5rem auto;
+    max-width: 98vw;
+  }
+  .victory-header {
+    font-size: 1.3rem;
+  }
+  .victory-member-icon {
+    width: 40px;
+    height: 40px;
+  }
+  .victory-member-name {
+    font-size: 1rem;
+  }
+  .victory-next-mode-img-container {
+    width: 90vw;
+    min-width: 0;
+    padding-top: 4%;
+    padding-bottom: 4%;
+  }
+  .victory-next-mode-row {
+    gap: 0.5rem;
+  }
+}
+@media (max-width: 400px) {
+  .victory-box-gradient {
+    padding: 0.5rem;
+    margin: 0.5rem auto 0.2rem auto;
+    max-width: 99vw;
+  }
+  .victory-header {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+  .victory-member-row {
+    gap: 0.3rem;
+    margin-bottom: 0.3rem;
+  }
+  .victory-member-icon {
+    width: 24px;
+    height: 24px;
+  }
+  .victory-member-name {
+    font-size: 0.7rem;
+  }
+  .victory-next-mode-img-container {
+    width: 98vw;
+    min-width: 0;
+    padding-top: 2%;
+    padding-bottom: 2%;
+  }
+  .victory-next-mode-row {
+    gap: 0.2rem;
+  }
+  .victory-history-box {
+    padding: 0.5rem;
+    margin: 0.5rem auto 0 auto;
+    max-width: 99vw;
+  }
+  .victory-history-copy-btn {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
+}

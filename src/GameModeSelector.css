@@ -76,3 +76,40 @@
   height: 14px;
   color: #ffffff;
 }
+@media (max-width: 600px) {
+  .modes {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4vw;
+    justify-content: center;
+  }
+  .mode-btn {
+    width: 36px;
+    height: 36px;
+    margin: 0 2vw;
+  }
+  .mode-btn img {
+    width: 32px;
+    height: 32px;
+  }
+  .rope-bg {
+    background-size: 100% 8px;
+  }
+}
+@media (max-width: 400px) {
+  .modes {
+    gap: 2vw;
+  }
+  .mode-btn {
+    width: 28px;
+    height: 28px;
+    margin: 0 1vw;
+  }
+  .mode-btn img {
+    width: 22px;
+    height: 22px;
+  }
+  .rope-bg {
+    background-size: 100% 4px;
+  }
+}
