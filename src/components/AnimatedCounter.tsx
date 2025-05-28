@@ -6,64 +6,93 @@ interface AnimatedCounterProps {
   duration?: number; // ms pour l'animation
   color?: string;
   fontSize?: string | number;
+  direction?: 'up' | 'down'; // Ajout de la direction
 }
 
 // Affiche chaque chiffre dans une colonne qui "défile" verticalement
-const AnimatedCounter: React.FC<AnimatedCounterProps> = ({ value, duration = 600, color = '#f2ff7d', fontSize = '1.1rem' }) => {
-  const [prev, setPrev] = useState(value);
+const AnimatedCounter: React.FC<AnimatedCounterProps> = ({ value, duration = 600, color = '#f2ff7d', fontSize = '1.1rem', direction = 'up' }) => {
   const [display, setDisplay] = useState(value);
-  const timeoutRef = useRef<number | null>(null);
+  const prevRef = useRef(value);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Met à jour prevRef à chaque affichage
+  useEffect(() => {
+    prevRef.current = display;
+  }, [display]);
 
   useEffect(() => {
     if (value !== display) {
-      setPrev(display);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => setDisplay(value), duration);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   // Pour chaque chiffre, anime la colonne
-  const prevStr = prev.toString().padStart(value.toString().length, '0');
+  const prevStr = prevRef.current.toString().padStart(value.toString().length, '0');
   const valueStr = value.toString().padStart(prevStr.length, '0');
 
   return (
     <span style={{ display: 'inline-flex', gap: 2, color, fontWeight: 700, fontSize, letterSpacing: 1 }}>
       {valueStr.split('').map((digit, i) => {
         const prevDigit = prevStr[i] || '0';
-        const isChanged = digit !== prevDigit && prev !== value;
+        const isAnimating = display !== value && digit !== prevDigit;
+        // Directions
+        const toTransformPrev = direction === 'up' ? 'translateY(-100%)' : 'translateY(100%)';
+        const fromTransformNew = direction === 'up' ? 'translateY(100%)' : 'translateY(-100%)';
+
         return (
           <span key={i} className="animated-digit-wrapper" style={{ position: 'relative', width: '1ch', height: '1.3em', display: 'inline-block', overflow: 'hidden' }}>
-            <span
-              className={`animated-digit${isChanged ? ' animate' : ''}`}
-              style={{
-                display: 'inline-block',
-                transition: isChanged ? `transform ${duration}ms cubic-bezier(.4,1.6,.6,1)` : 'none',
-                transform: isChanged ? 'translateY(-100%)' : 'translateY(0)',
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                width: '100%',
-                zIndex: 1,
-              }}
-            >
-              {prevDigit}
-            </span>
-            <span
-              className={`animated-digit${isChanged ? ' animate' : ''}`}
-              style={{
-                display: 'inline-block',
-                transition: isChanged ? `transform ${duration}ms cubic-bezier(.4,1.6,.6,1)` : 'none',
-                transform: isChanged ? 'translateY(0)' : 'translateY(100%)',
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                width: '100%',
-                zIndex: 2,
-              }}
-            >
-              {digit}
-            </span>
+            {isAnimating ? (
+              <>
+                <span
+                  className="animated-digit animate"
+                  style={{
+                    display: 'inline-block',
+                    transition: `transform ${duration}ms cubic-bezier(.4,1.6,.6,1)` ,
+                    transform: toTransformPrev,
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    width: '100%',
+                    zIndex: 1,
+                  }}
+                >
+                  {prevDigit}
+                </span>
+                <span
+                  className="animated-digit animate"
+                  style={{
+                    display: 'inline-block',
+                    transition: `transform ${duration}ms cubic-bezier(.4,1.6,.6,1)` ,
+                    transform: fromTransformNew,
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    width: '100%',
+                    zIndex: 2,
+                    animation: `${direction === 'up' ? 'counter-slide-up' : 'counter-slide-down'} ${duration}ms cubic-bezier(.4,1.6,.6,1) forwards`,
+                  }}
+                >
+                  {digit}
+                </span>
+              </>
+            ) : (
+              <span
+                className="animated-digit"
+                style={{
+                  display: 'inline-block',
+                  transition: 'none',
+                  transform: 'translateY(0)',
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  width: '100%',
+                  zIndex: 2,
+                }}
+              >
+                {digit}
+              </span>
+            )}
           </span>
         );
       })}

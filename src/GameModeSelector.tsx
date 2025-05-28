@@ -29,7 +29,7 @@ const GameModeSelector: React.FC<GameModeSelectorProps> = ({ wonModes = [] }) =>
                 style={current === mode.key ? { cursor: 'default' } : {}}
               >
                 <img
-                  src={import.meta.env.BASE_URL + mode.img}
+                  src={mode.img}
                   alt={mode.label}
                   className={current === mode.key ? '' : 'bw'}
                 />

@@ -6,10 +6,11 @@ import './ValoJundleTheme.css';
 import vjlData from './data/vjl.json';
 import VictoryBox from './components/VictoryBox';
 import { buildShareText } from './utils/buildShareText';
-import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswerIdAndGameId, getPersonById, fetchWinnersCount } from './api/api';
+import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswerIdAndGameId, fetchWinnersCount, getPersonById } from './api/api';
 import type { VJLPerson } from './types/VJLPerson';
 import AnimatedCounter from './components/AnimatedCounter';
 import { MODES } from './data/modes';
+import { useWonModes } from './WonModesContext';
 
 const ATTRIBUTES: { key: Exclude<keyof VJLPerson, 'id'>; label: string }[] = [
   { key: 'pfp', label: 'Membre' },
@@ -39,7 +40,7 @@ const ClassicPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [winnersCount, setWinnersCount] = useState<number>(0);
   const [gameId, setGameId] = useState<number | null>(null);
-  const [wonModes, setWonModes] = useState<string[]>([]);
+  const { wonModes, refreshWonModes } = useWonModes();
 
   // Chargement initial depuis le backend
   useEffect(() => {
@@ -65,7 +66,7 @@ const ClassicPage: React.FC = () => {
               return g.hasWon ? m.key : null;
             })
           );
-          setWonModes(allModes.filter(Boolean) as string[]);
+          refreshWonModes();
         }
       } finally {
         setLoading(false);
@@ -85,9 +86,9 @@ const ClassicPage: React.FC = () => {
     let stop = false;
     async function fetchCount() {
       try {
-        const res = await fetch(`/api/game-count/${GAME_MODE}`);
-        const data = await res.json();
-        if (!stop) setWinnersCount(data.count);
+        const count = await fetchWinnersCount(GAME_MODE);
+
+        if (!stop) setWinnersCount(count);
       } catch {}
     }
     fetchCount();
@@ -215,6 +216,13 @@ const ClassicPage: React.FC = () => {
   // Pour l'historique, il faut passer les objets VJLPerson :
   const guessObjects = guesses.map(id => getPersonById(id)).filter(Boolean) as VJLPerson[];
 
+  // Recharge wonModes quand la victoire est obtenue
+  useEffect(() => {
+    if (hasWon) {
+      refreshWonModes();
+    }
+  }, [hasWon, refreshWonModes]);
+
   if (loading || !answer) {
     return <div>Loading...</div>;
   }
@@ -228,10 +236,10 @@ const ClassicPage: React.FC = () => {
       {/* Le compteur reste affiché même après la victoire */}
       <div style={{ textAlign: 'center', marginTop: 8, marginBottom: 18 }}>
         <span style={{ color: '#f2ff7d', fontWeight: 700, fontSize: '1.1rem', letterSpacing: 1 }}>
-          <AnimatedCounter value={winnersCount} />
+          <AnimatedCounter value={winnersCount} direction="up" />
         </span>
         <span style={{ color: '#fff', fontWeight: 500, fontSize: '1.1rem', marginLeft: 6 }}>
-          personne{winnersCount > 1 ? 's' : ''} ont déjà trouvé !
+          {winnersCount > 1 ? 'personnes ont' : 'personne a'} trouvé !
         </span>
       </div>
       <div style={{ marginBottom: 18 }} />
@@ -247,11 +255,11 @@ const ClassicPage: React.FC = () => {
         <>
           <div ref={resultRef} style={{ margin: '32px 0 24px 0' }}>
             <VictoryBox
-              memberIcon={import.meta.env.BASE_URL + 'pfps/' + answer.pfp}
+              memberIcon={'pfps/' + answer.pfp}
               memberName={answer.prenom}
               attempts={guessObjects.length}
               nextMode="Citation"
-              nextModeImg={import.meta.env.BASE_URL + 'next-citation.png'}
+              nextModeImg={'next-citation.png'}
               countdown={countdown}
               timezone="Europe/Paris (UTC+2)"
               historyText={getShareText()}

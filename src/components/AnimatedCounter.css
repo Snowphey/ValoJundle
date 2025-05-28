@@ -12,3 +12,11 @@
   font-variant-numeric: tabular-nums;
   will-change: transform;
 }
+@keyframes counter-slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes counter-slide-down {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
+}

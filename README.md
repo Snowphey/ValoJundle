@@ -45,6 +45,19 @@ Le site sera accessible sur http://localhost:5173
 
 > Les URLs sont configurables dans le fichier `.env`.
 
+## Déploiement
+1. Build le front :
+   ```powershell
+   npm run build
+   ```
+
+2. Lancer le backend qui sert les fichiers statiques dans le dossier `/dist` généré :
+   ```powershell
+   node backend.js
+   ```
+
+3. (Optionnel) Modifier les variables d'environnement dans `.env` pour s'accorder à l'URL de déploiement.
+
 ## Structure du projet
 - `backend.js` : serveur Express pour la logique de jeu et la persistance.
 - `src/` : code source React (pages, composants, utilitaires).

@@ -17,7 +17,7 @@
   padding: 0 0 0 16px;
   border: none;
   outline: none;
-  background-image: url("input-guess.webp");  
+  background: url("/input-guess.webp");  
   background-repeat: no-repeat;  
   background-position: 0% 0%;
   background-size: 100% 100%;
@@ -35,7 +35,7 @@
 .vjl-guess-input button[type="submit"] { 
   border: none;
   outline: none;
-  background-image: url("guess-arrow.webp");  
+  background: url("/guess-arrow.webp");  
   background-repeat: no-repeat;  
   background-position: 0% 0%;
   background-size: 100% 100%;

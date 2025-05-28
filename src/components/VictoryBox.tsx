@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import "./VictoryBox.css";
 import GameModeSelector from "../GameModeSelector";
+import AnimatedCounter from "./AnimatedCounter";
 
 interface VictoryBoxProps {
   memberIcon: string; // chemin de l'icône/photo
@@ -24,8 +25,6 @@ const VictoryBox: React.FC<VictoryBoxProps> = ({
   nextModeImg,
   countdown,
   timezone,
-  historyText,
-  onCopy,
   wonModes = [], // Par défaut vide
 }) => {
   const navigate = useNavigate();
@@ -42,7 +41,23 @@ const VictoryBox: React.FC<VictoryBoxProps> = ({
       </div>
       <div className="victory-attempts">Nombre d'essais : <span style={{color: "#09cae6"}}>{attempts}</span></div>
       <div className="victory-next">Le prochain membre est dans</div>
-      <div className="victory-countdown">{countdown}</div>
+      <div className="victory-countdown">
+        {/* Utilise 6 AnimatedCounter pour chaque chiffre du countdown */}
+        {countdown.split('').map((char, idx) =>
+          char === ':' ? (
+            <span key={idx} style={{ display: 'inline-block', width: '0.7ch', textAlign: 'center' }}>:</span>
+          ) : (
+            <AnimatedCounter
+              key={idx}
+              value={parseInt(char, 10)}
+              direction="down"
+              duration={500}
+              color="#fff"
+              fontSize="1.5rem"
+            />
+          )
+        )}
+      </div>
       <div className="victory-timezone">Fuseau horaire : {timezone}</div>
       <div className="victory-separator" />
       <div className="victory-next-mode-label">Mode suivant :</div>

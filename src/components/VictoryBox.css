@@ -142,7 +142,7 @@
   border: 2px solid #4fc3f7;
   border-radius: 1.2rem;
   background: linear-gradient(135deg, #0a2340 0%, #444 100%);
-  color: #e3f2fd;
+  color: #ffffff;
   padding: 1.2rem;
   margin: 1.5rem auto 0 auto;
   max-width: 500px;
@@ -151,6 +151,7 @@
 }
 .victory-history-copy-btn {
   background: linear-gradient(90deg, #1e2328 60%, #2c2f36 100%);
+  color: #ffffff;
   border: 1px solid #e3f2fd;
   min-width: 120px;
   border-radius: 8px;
@@ -164,7 +165,6 @@
 }
 .victory-history-copy-btn:hover {
   background: linear-gradient(90deg, #2c2f36 60%, #1e2328 100%);
-  color: #fffbe6;
   border-color: #e6c559;
   outline: none;
 }

@@ -29,7 +29,7 @@ const CardColumn: React.FC<CardColumnProps> = ({ label, value, status = 'incorre
         className={`card-column card-${status}${isPfp ? ' card-pfp' : ''}${hovered ? ' card-hovered' : ''}${shouldShowArrow ? ' card-arrow' : ''}`}
         style={{
           ...animationStyle,
-          backgroundImage: shouldShowArrow ? `url(${import.meta.env.BASE_URL + 'red.webp'})` : undefined,
+          background: shouldShowArrow ? `url(${'red.webp'})` : undefined,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           position: 'relative',

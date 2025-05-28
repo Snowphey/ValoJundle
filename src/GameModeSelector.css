@@ -10,7 +10,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: url(/rope.png);
+  background: url(/rope.png);
   background-repeat: no-repeat;
   background-position: 50%;
   background-size: 100% 13px;
@@ -34,6 +34,7 @@
   align-items: center;
   justify-content: center;
   transition: transform 0.15s;
+  position: relative;
 }
 .mode-btn.selected {
   transform: scale(1.15);
@@ -57,12 +58,12 @@
   align-items: center;
 }
 .mode-btn-check {
+  background: #2ecc40;
   position: absolute;
   bottom: 2px;
   right: 2px;
   width: 18px;
   height: 18px;
-  background: #222;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -73,5 +74,5 @@
 .mode-btn-check svg {
   width: 14px;
   height: 14px;
-  color: #2ecc40;
+  color: #ffffff;
 }

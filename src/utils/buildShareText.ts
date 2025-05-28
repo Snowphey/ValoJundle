@@ -33,12 +33,12 @@ export function buildShareText(
       const guessRounded = Math.round(guess.height / 10) * 10;
       const answerRounded = Math.round(answer.height / 10) * 10;
       if (guessRounded === answerRounded) return 'correct';
-      if (guessRounded > answerRounded) return 'higher';
+      if (guessRounded < answerRounded) return 'higher';
       return 'lower';
     }
     if (key === 'birthDate') {
       if (guess.birthDate === answer.birthDate) return 'correct';
-      if (guess.birthDate > answer.birthDate) return 'higher';
+      if (guess.birthDate < answer.birthDate) return 'higher';
       return 'lower';
     }
     if (Array.isArray(guess[key]) && Array.isArray(answer[key])) {

@@ -102,7 +102,7 @@ const VJLGuessInput: React.FC<VJLGuessInputProps> = ({ onGuess }) => {
         <ul className="suggestions-list">
           {suggestions.map((person) => (
             <li key={person.pfp} onClick={() => handleSelect(person)}>
-              <img src={import.meta.env.BASE_URL + 'pfps/' + person.pfp} alt={person.prenom} loading="lazy" />
+              <img src={'pfps/' + person.pfp} alt={person.prenom} loading="lazy" />
               <span>{person.prenom}</span>
             </li>
           ))}

@@ -3,7 +3,7 @@
 import type { VJLPerson } from '../types/VJLPerson.ts';
 import vjlData from '../data/vjl.json';
 
-const API_URL = (import.meta.env.VITE_API_URL?.endsWith('/api') ? import.meta.env.VITE_API_URL : import.meta.env.VITE_API_URL + '/api') || 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_URL + '/api';
 
 function getOrCreateUserId() {
   let userId = localStorage.getItem('valojundle-userid');

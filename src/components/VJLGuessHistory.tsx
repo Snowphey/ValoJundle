@@ -116,7 +116,7 @@ const VJLGuessHistory: React.FC<VJLGuessHistoryProps> = ({ guesses, answer, attr
                       attr.key === 'pfp'
                         ? (
                           <img
-                            src={import.meta.env.BASE_URL + 'pfps/' + guess.pfp}
+                            src={'pfps/' + guess.pfp}
                             alt={guess.prenom || guess.pfp}
                           />
                         )
