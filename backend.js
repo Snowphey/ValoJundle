@@ -151,21 +151,29 @@ app.get('/api/game-count/:mode', (req, res) => {
   }
   let count = 0;
   if (todayAnswerId !== null) {
+    // On récupère le bon id numérique de answers pour aujourd'hui
+    let todayNumericId = null;
+    for (const ansId in answers) {
+      if (answers[ansId] && answers[ansId].date === today) {
+        todayNumericId = Number(ansId);
+        break;
+      }
+    }
     for (const userId in games) {
       const user = games[userId];
-      const state = user[mode];
-      if (state && state.gameId && state.hasWon && Array.isArray(state.guesses) && state.guesses.length > 0) {
-        // On vérifie que la partie correspond bien à la game du jour (gameId du jour)
-        // On récupère le bon id numérique de answers pour aujourd'hui
-        let todayNumericId = null;
-        for (const ansId in answers) {
-          if (answers[ansId] && answers[ansId].date === today) {
-            todayNumericId = Number(ansId);
-            break;
-          }
-        }
-        if (state.gameId === todayNumericId && state.guesses[state.guesses.length - 1] === todayAnswerId) {
+      let states = user[mode] || [];
+      if (!Array.isArray(states)) states = states ? [states] : [];
+      for (const state of states) {
+        if (
+          state &&
+          state.gameId === todayNumericId &&
+          state.hasWon &&
+          Array.isArray(state.guesses) &&
+          state.guesses.length > 0 &&
+          state.guesses[state.guesses.length - 1] === todayAnswerId
+        ) {
           count++;
+          break; // Un seul win par user/mode/jour
         }
       }
     }
