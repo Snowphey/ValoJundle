@@ -17,24 +17,38 @@ app.use(cors());
 app.use(express.json());
 
 // Helper: get today's gameId (Europe/Paris)
-function getGameIdForToday() {
-  const now = new Date();
-  // Obtenir la date en heure de Paris
-  const parisDateParts = new Intl.DateTimeFormat('fr-FR', {
+function getParisDateObj(date = new Date()) {
+  // Retourne un objet Date à l'heure Europe/Paris correspondant à la date passée (ou maintenant)
+  const parts = new Intl.DateTimeFormat('fr-FR', {
     timeZone: 'Europe/Paris',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).formatToParts(now);
-  const year = parisDateParts.find(p => p.type === 'year')?.value;
-  const month = parisDateParts.find(p => p.type === 'month')?.value;
-  const day = parisDateParts.find(p => p.type === 'day')?.value;
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).formatToParts(date);
+  const year = parts.find(p => p.type === 'year')?.value;
+  const month = parts.find(p => p.type === 'month')?.value;
+  const day = parts.find(p => p.type === 'day')?.value;
+  const hour = parts.find(p => p.type === 'hour')?.value;
+  const minute = parts.find(p => p.type === 'minute')?.value;
+  const second = parts.find(p => p.type === 'second')?.value;
+  return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+}
+
+function getGameIdForToday() {
+  const nowParis = getParisDateObj();
+  const year = nowParis.getFullYear();
+  const month = (nowParis.getMonth() + 1).toString().padStart(2, '0');
+  const day = nowParis.getDate().toString().padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
 // Helper: read/write JSON file
 function readGames() {
-  if (!fs.existsSync(DATA_FILE)) {
+  if (!fs.existsSync(DATA_FILE) || fs.statSync(DATA_FILE).size === 0) {
     fs.writeFileSync(DATA_FILE, '{}', 'utf8');
     return {};
   }
@@ -44,7 +58,7 @@ function writeGames(games) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(games, null, 2), 'utf8');
 }
 function readAnswers() {
-  if (!fs.existsSync(ANSWERS_FILE)) {
+  if (!fs.existsSync(ANSWERS_FILE) || fs.statSync(ANSWERS_FILE).size === 0) {
     fs.writeFileSync(ANSWERS_FILE, '{}', 'utf8');
     return {};
   }
@@ -73,7 +87,6 @@ function getAnswerForDay(mode, date, vjlData) {
   if (!answers[id]) {
     answers[id] = { date, modes: {} };
   }
-  // Génère une réponse unique par mode, différente du jour précédent ET des autres modes du jour
   if (!answers[id].modes[mode]) {
     function getSeededRandom(seed) {
       let h = 2166136261 >>> 0;
@@ -89,9 +102,11 @@ function getAnswerForDay(mode, date, vjlData) {
       };
     }
     // 1. Exclure la réponse du jour précédent (tous modes)
-    const prevDate = new Date(date);
-    prevDate.setUTCDate(prevDate.getUTCDate() - 1);
-    const prevGameId = `${prevDate.getUTCFullYear()}-${(prevDate.getUTCMonth()+1).toString().padStart(2,'0')}-${prevDate.getUTCDate().toString().padStart(2,'0')}`;
+    // Calcul du jour précédent en Europe/Paris
+    const dateParis = getParisDateObj(new Date(date + 'T00:00:00'));
+    const prevParis = new Date(dateParis);
+    prevParis.setDate(prevParis.getDate() - 1);
+    const prevGameId = `${prevParis.getFullYear()}-${(prevParis.getMonth()+1).toString().padStart(2,'0')}-${prevParis.getDate().toString().padStart(2,'0')}`;
     let prevAnswers = [];
     for (const prevId in answers) {
       if (answers[prevId] && answers[prevId].date === prevGameId) {

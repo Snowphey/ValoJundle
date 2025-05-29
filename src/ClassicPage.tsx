@@ -151,38 +151,52 @@ const ClassicPage: React.FC = () => {
     return buildShareText(guesses.map(id => getPersonById(id)!), answer, ATTRIBUTES, 'classique', gameId ? String(gameId) : '?');
   }
 
-  // Chronomètre (exemple simple, à adapter si besoin)
+  // Chronomètre (Europe/Paris, calculé côté frontend à chaque tick)
   const [countdown, setCountdown] = useState('00:00:00');
   React.useEffect(() => {
     let cancelled = false;
     if (!(guesses.length > 0 && lastGuess && lastGuess.id === answer?.id && hasWon)) return;
-    // Prochain reset à minuit UTC+2 (exemple)
-    const getNextReset = () => {
+    const getNowParis = () => {
       const now = new Date();
-      const next = new Date(now);
-      next.setUTCHours(22, 0, 0, 0); // 22h UTC = minuit UTC+2
-      if (now > next) next.setUTCDate(next.getUTCDate() + 1);
-      return next;
+      // On récupère la date/heure Paris à partir de l'heure locale
+      const parts = new Intl.DateTimeFormat('fr-FR', {
+        timeZone: 'Europe/Paris',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      }).formatToParts(now);
+      const year = parts.find(p => p.type === 'year')?.value;
+      const month = parts.find(p => p.type === 'month')?.value;
+      const day = parts.find(p => p.type === 'day')?.value;
+      const hour = parts.find(p => p.type === 'hour')?.value;
+      const minute = parts.find(p => p.type === 'minute')?.value;
+      const second = parts.find(p => p.type === 'second')?.value;
+      return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+    };
+    const getNextResetParis = (nowParis: Date) => {
+      const nextParis = new Date(nowParis);
+      nextParis.setHours(24, 0, 0, 0);
+      if (nowParis >= nextParis) nextParis.setDate(nextParis.getDate() + 1);
+      return nextParis;
     };
     const runTimer = async () => {
       while (!cancelled) {
-        const now = new Date();
-        const next = getNextReset();
-        const diff = next.getTime() - now.getTime();
+        const nowParis = getNowParis();
+        const next = getNextResetParis(nowParis);
+        const diff = next.getTime() - nowParis.getTime();
         if (diff <= 0) {
           setCountdown('00:00:00');
-          // On attend un court instant pour afficher 00:00:00 puis on reload
-          setTimeout(async () => {
-            // On recharge la page pour obtenir la nouvelle partie (et donc la nouvelle date du backend)
-            window.location.reload();
-          }, 800);
+          setTimeout(() => window.location.reload(), 800);
           break;
         }
         const h = Math.floor(diff / 3600000);
         const m = Math.floor((diff % 3600000) / 60000);
         const s = Math.floor((diff % 60000) / 1000);
         setCountdown(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
-        // Attend jusqu'à la prochaine seconde réelle
         const msToNextSecond = 1000 - (Date.now() % 1000);
         await new Promise(res => setTimeout(res, msToNextSecond));
       }
