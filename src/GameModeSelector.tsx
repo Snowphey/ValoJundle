@@ -3,15 +3,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import './GameModeSelector.css';
 import { Tooltip } from './components/Tooltip';
 import { MODES } from './data/modes';
+import { useWonModes } from './WonModesContext';
 
-interface GameModeSelectorProps {
-  wonModes?: string[];
-}
-
-const GameModeSelector: React.FC<GameModeSelectorProps> = ({ wonModes = [] }) => {
+const GameModeSelector: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const current = location.pathname.replace(/^\//, '') || 'classic';
+  const { wonModes } = useWonModes();
 
   return (
     <div className="game-mode-selector">

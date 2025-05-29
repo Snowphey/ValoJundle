@@ -5,15 +5,20 @@ interface TooltipProps {
   content: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  direction?: 'top' | 'bottom'; // Ajout du prop direction
 }
 
-export const Tooltip: React.FC<TooltipProps> = ({ content, children, className }) => {
+export const Tooltip: React.FC<TooltipProps> = ({ content, children, className, direction }) => {
   const [visible, setVisible] = useState(false);
-  const [position, setPosition] = useState<'top' | 'bottom'>('top');
+  const [position, setPosition] = useState<'top' | 'bottom'>(direction || 'top');
   const wrapperRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
+    if (direction) {
+      setPosition(direction);
+      return;
+    }
     if (visible && wrapperRef.current && tooltipRef.current) {
       const wrapperRect = wrapperRef.current.getBoundingClientRect();
       const tooltipRect = tooltipRef.current.getBoundingClientRect();
@@ -25,7 +30,7 @@ export const Tooltip: React.FC<TooltipProps> = ({ content, children, className }
         setPosition('bottom');
       }
     }
-  }, [visible]);
+  }, [visible, direction]);
 
   return (
     <div

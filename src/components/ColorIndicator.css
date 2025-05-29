@@ -10,13 +10,20 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  width: 80px; /* largeur fixe pour alignement parfait, ajustez si besoin */
+  min-width: 0;
+  box-sizing: border-box;
 }
 .color-indicator .color {
   width: 32px;
   height: 32px;
-  margin: 0;
+  margin: 0 auto;
   border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .color-arrow {
   width: 32px;
@@ -31,6 +38,8 @@
   margin-top: 2px;
   text-align: center;
   font-family: 'Friz Quadrata Std', Mobilo, Helvetica, Arial, sans-serif;
+  width: 100%;
+  display: block;
 }
 .color-indicator .correct {
   background: url('/green.webp') center/cover no-repeat;
@@ -70,7 +79,7 @@
   display: flex;
   flex-direction: row;
   gap: 28px;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
 }
 
@@ -100,6 +109,9 @@
   .color-indicator-label {
     font-size: 0.8rem;
   }
+  .color-indicator .color-label-group {
+    width: 60px;
+  }
 }
 
 @media (max-width: 400px) {
@@ -126,5 +138,8 @@
   }
   .color-indicator-label {
     font-size: 0.6rem;
+  }
+  .color-indicator .color-label-group {
+    width: 50px;
   }
 }

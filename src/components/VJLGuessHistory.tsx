@@ -50,56 +50,59 @@ const VJLGuessHistory: React.FC<VJLGuessHistoryProps> = ({ guesses, answer, attr
     root.style.setProperty('--vjl-nb-cols', attributes.length.toString());
   }, [attributes.length]);
 
+  if (guesses.length === 0) return null;
+
   return (
     <div className="vjl-guess-history-scroll">
       <div className="vjl-guess-history">
-        {/* En-tête des colonnes */}
-        <div
-          className="vjl-guess-history-header"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            width: '100%',
-            gap: 0,
-          }}
-        >
-          {attributes.map((attr) => (
-            <div
-              key={attr.key}
-              className="card-label"
-              style={{ flex: `1 1 0`, textAlign: 'center' }}
-            >
-              {attr.key === 'pfp' ? (
-                attr.label
-              ) : (
-                <Tooltip content={(() => {
-                  switch(attr.key) {
-                    case 'gender':
-                      return 'Masculin ou Féminin';
-                    case 'mainRoles':
-                      return 'Top, Jungle, Mid, ADC, Support, ou Aucun';  
-                    case 'hairColor':
-                      return 'Brun, Blond, etc...';
-                    case 'eyeColors':
-                      return 'Marron, Bleu, etc...';
-                    case 'height':
-                      return 'Toute taille entre 100 et 300 cm';
-                    case 'option':
-                      return 'IA, ICC, Cyber, INEM, HPDA ou Aucune';
-                    case 'birthRegion':
-                      return 'Bretagne, Normandie, etc...';
-                    case 'birthDate':
-                      return 'Toute date entre 1990 et 2005';
-                    default:
-                      return attr.label;
-                  }
-                })()}>
-                  <span>{attr.label}</span>
-                </Tooltip>
-              )}
-            </div>
-          ))}
-        </div>
+        {guesses.length === 1 && (
+          <div
+            className="vjl-guess-history-header"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              width: '100%',
+              gap: 0,
+            }}
+          >
+            {attributes.map((attr) => (
+              <div
+                key={attr.key}
+                className="card-label"
+                style={{ flex: `1 1 0`, textAlign: 'center' }}
+              >
+                {attr.key === 'pfp' ? (
+                  attr.label
+                ) : (
+                  <Tooltip direction="bottom" content={(() => {
+                    switch(attr.key) {
+                      case 'gender':
+                        return 'Masculin ou Féminin';
+                      case 'mainRoles':
+                        return 'Top, Jungle, Mid, ADC, Support, ou Aucun';  
+                      case 'hairColor':
+                        return 'Brun, Blond, etc...';
+                      case 'eyeColors':
+                        return 'Marron, Bleu, etc...';
+                      case 'height':
+                        return 'Toute taille entre 100 et 300 cm';
+                      case 'option':
+                        return 'IA, ICC, Cyber, INEM, HPDA ou Aucune';
+                      case 'birthRegion':
+                        return 'Bretagne, Normandie, etc...';
+                      case 'birthDate':
+                        return 'Toute date entre 1990 et 2005';
+                      default:
+                        return attr.label;
+                    }
+                  })()}>
+                    <span>{attr.label}</span>
+                  </Tooltip>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
         {guesses.slice().reverse().map((guess, idx) => {
           // Calculer l'index réel dans guesses pour l'animation
           const guessIdx = guesses.length - 1 - idx;

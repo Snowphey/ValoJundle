@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+src/data/answers.json
+src/data/games.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

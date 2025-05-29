@@ -1,8 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Beaufort+for+LOL&display=swap');
-
 .valojundle-bg {
   background: url('/lol-bg.webp') center/cover no-repeat fixed, #181c24;
-  font-family: 'Beaufort for LOL', 'Segoe UI', Arial, sans-serif;
+  font-family: 'Segoe UI', Arial, sans-serif;
   padding-bottom: 40px;
   display: flex;
   flex-direction: column;

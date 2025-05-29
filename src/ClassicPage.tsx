@@ -20,7 +20,7 @@ const ATTRIBUTES: { key: Exclude<keyof VJLPerson, 'id'>; label: string }[] = [
   { key: 'eyeColors', label: 'Yeux' },
   { key: 'height', label: 'Taille (cm)' },
   { key: 'option', label: 'Option' },
-  { key: 'birthRegion', label: 'Région' },
+  { key: 'birthRegion', label: 'Région de naissance' },
   { key: 'birthDate', label: 'Date de naissance' },
 ];
 
@@ -40,7 +40,7 @@ const ClassicPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [winnersCount, setWinnersCount] = useState<number>(0);
   const [gameId, setGameId] = useState<number | null>(null);
-  const { wonModes, refreshWonModes } = useWonModes();
+  const { refreshWonModes } = useWonModes();
 
   // Chargement initial depuis le backend
   useEffect(() => {
@@ -57,17 +57,6 @@ const ClassicPage: React.FC = () => {
         const data = await apiLoadGame(GAME_MODE);
         setGuesses(data.guesses || []);
         setHasWon(data.hasWon || false);
-        // Récupère les modes gagnés pour l'utilisateur
-        const userId = localStorage.getItem('valojundle-userid');
-        if (userId) {
-          const allModes = await Promise.all(
-            MODES.map(async m => {
-              const g = await apiLoadGame(m.key);
-              return g.hasWon ? m.key : null;
-            })
-          );
-          refreshWonModes();
-        }
       } finally {
         setLoading(false);
       }
@@ -118,9 +107,11 @@ const ClassicPage: React.FC = () => {
         setAnimatingIndex(null);
         if (guesses.length > 0 && lastGuess && lastGuess.id === answer?.id) {
           setShowConfetti(true);
-          setTimeout(() => {
+          setTimeout(async () => {
             setShowResult(true);
             setHasWon(true);
+            await apiSaveGame(GAME_MODE, [...guesses], true);
+            refreshWonModes();
             setTimeout(() => setScrollToResult(true), 600);
           }, 1200);
         } else {
@@ -169,7 +160,7 @@ const ClassicPage: React.FC = () => {
   // Chronomètre (exemple simple, à adapter si besoin)
   const [countdown, setCountdown] = useState('00:00:00');
   React.useEffect(() => {
-    // Correction : démarre le timer si la partie est gagnée (hasWon), pas seulement si showResult
+    let cancelled = false;
     if (!(guesses.length > 0 && lastGuess && lastGuess.id === answer?.id && hasWon)) return;
     // Prochain reset à minuit UTC+2 (exemple)
     const getNextReset = () => {
@@ -179,27 +170,30 @@ const ClassicPage: React.FC = () => {
       if (now > next) next.setUTCDate(next.getUTCDate() + 1);
       return next;
     };
-    const update = () => {
-      const now = new Date();
-      const next = getNextReset();
-      const diff = next.getTime() - now.getTime();
-      if (diff <= 0) {
-        setCountdown('00:00:00');
-        // Supprime la partie avant de refresh
-        apiSaveGame(GAME_MODE, guesses, false); // Sauvegarde les données avant suppression
-        setTimeout(() => {
-          window.location.reload();
-        }, 800); // petit délai pour voir le 00:00:00
-        return;
+    const runTimer = async () => {
+      while (!cancelled) {
+        const now = new Date();
+        const next = getNextReset();
+        const diff = next.getTime() - now.getTime();
+        if (diff <= 0) {
+          setCountdown('00:00:00');
+          await apiSaveGame(GAME_MODE, guesses, false); // Sauvegarde les données avant suppression
+          setTimeout(() => {
+            window.location.reload();
+          }, 800); // petit délai pour voir le 00:00:00
+          break;
+        }
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        setCountdown(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+        // Attend jusqu'à la prochaine seconde réelle
+        const msToNextSecond = 1000 - (Date.now() % 1000);
+        await new Promise(res => setTimeout(res, msToNextSecond));
       }
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      setCountdown(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
     };
-    update();
-    const timer = setInterval(update, 1000);
-    return () => clearInterval(timer);
+    runTimer();
+    return () => { cancelled = true; };
   }, [guesses, answer, hasWon, lastGuess]);
 
   // Gestion du copier
@@ -215,13 +209,6 @@ const ClassicPage: React.FC = () => {
 
   // Pour l'historique, il faut passer les objets VJLPerson :
   const guessObjects = guesses.map(id => getPersonById(id)).filter(Boolean) as VJLPerson[];
-
-  // Recharge wonModes quand la victoire est obtenue
-  useEffect(() => {
-    if (hasWon) {
-      refreshWonModes();
-    }
-  }, [hasWon, refreshWonModes]);
 
   if (loading || !answer) {
     return <div>Loading...</div>;
@@ -262,9 +249,6 @@ const ClassicPage: React.FC = () => {
               nextModeImg={'next-citation.png'}
               countdown={countdown}
               timezone="Europe/Paris (UTC+2)"
-              historyText={getShareText()}
-              onCopy={handleCopy}
-              wonModes={wonModes}
             />
             <div className="victory-history-box">
                 <div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word', fontSize: '1.08rem', marginBottom: 8 }}>{getShareText()}</div>

@@ -12,9 +12,6 @@ interface VictoryBoxProps {
   nextModeImg: string;
   countdown: string;
   timezone: string;
-  historyText: string;
-  onCopy: () => void;
-  wonModes?: string[]; // Ajout de la prop pour les modes gagnés
 }
 
 const VictoryBox: React.FC<VictoryBoxProps> = ({
@@ -25,7 +22,6 @@ const VictoryBox: React.FC<VictoryBoxProps> = ({
   nextModeImg,
   countdown,
   timezone,
-  wonModes = [], // Par défaut vide
 }) => {
   const navigate = useNavigate();
 
@@ -80,7 +76,7 @@ const VictoryBox: React.FC<VictoryBoxProps> = ({
         {/* Rope et logos des modes ici, à compléter selon assets */}
       </div>
       <div className="victory-game-mode-selector">
-        <GameModeSelector wonModes={wonModes} />
+        <GameModeSelector />
       </div>
     </div>
     // Boîte d'historique en dessous
