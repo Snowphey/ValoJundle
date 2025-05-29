@@ -54,15 +54,25 @@ export function buildShareText(
     ) return 'partial';
     return 'incorrect';
   };
-  guesses.slice(0, 6).reverse().forEach(guess => {
+  // Affiche les 5 derniers guesses (ou moins) et indique s'il y en a plus
+  const displayedGuesses = guesses.slice(-5).reverse();
+  displayedGuesses.forEach(guess => {
     const row = shareAttributes.map(attr => {
       const status = getStatus(guess, answer, attr.key);
       return getStatusEmoji(status);
     }).join('');
     text += row + '\n';
   });
-  if (guesses.length > 6) {
-    text += `➕${guesses.length - 6}️⃣ de plus\n`;
+  if (guesses.length > 5) {
+    // Mappe les chiffres en émojis et le + aussi
+    const numberToEmoji = (n: number) => n.toString().split('').map(digit => {
+      const emojiDigits: Record<string, string> = {
+        '0': '0️⃣', '1': '1️⃣', '2': '2️⃣', '3': '3️⃣', '4': '4️⃣',
+        '5': '5️⃣', '6': '6️⃣', '7': '7️⃣', '8': '8️⃣', '9': '9️⃣'
+      };
+      return emojiDigits[digit] || digit;
+    }).join('');
+    text += `➕${numberToEmoji(guesses.length - 5)} de plus\n`;
   }
   text += URL;
   return text;
