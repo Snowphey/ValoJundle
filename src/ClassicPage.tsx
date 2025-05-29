@@ -9,7 +9,6 @@ import { buildShareText } from './utils/buildShareText';
 import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswerIdAndGameId, fetchWinnersCount, getPersonById } from './api/api';
 import type { VJLPerson } from './types/VJLPerson';
 import AnimatedCounter from './components/AnimatedCounter';
-import { MODES } from './data/modes';
 import { useWonModes } from './WonModesContext';
 
 const ATTRIBUTES: { key: Exclude<keyof VJLPerson, 'id'>; label: string }[] = [
