@@ -59,3 +59,10 @@ export function getPersonById(id: number): VJLPerson | undefined {
 export function getUserId() {
   return getOrCreateUserId();
 }
+
+export async function fetchTodayFromBackend(): Promise<string> {
+  const res = await fetch(`${API_URL}/today`);
+  if (!res.ok) throw new Error('Erreur récupération date du jour');
+  const data = await res.json();
+  return data.today;
+}

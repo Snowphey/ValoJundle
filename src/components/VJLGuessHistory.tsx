@@ -55,7 +55,7 @@ const VJLGuessHistory: React.FC<VJLGuessHistoryProps> = ({ guesses, answer, attr
   return (
     <div className="vjl-guess-history-scroll">
       <div className="vjl-guess-history">
-        {guesses.length === 1 && (
+        {guesses.length > 0 && (
           <div
             className="vjl-guess-history-header"
             style={{

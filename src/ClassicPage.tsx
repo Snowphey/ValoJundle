@@ -6,7 +6,7 @@ import './ValoJundleTheme.css';
 import vjlData from './data/vjl.json';
 import VictoryBox from './components/VictoryBox';
 import { buildShareText } from './utils/buildShareText';
-import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswerIdAndGameId, fetchWinnersCount, getPersonById } from './api/api';
+import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswerIdAndGameId, fetchWinnersCount, getPersonById, fetchTodayFromBackend } from './api/api';
 import type { VJLPerson } from './types/VJLPerson';
 import AnimatedCounter from './components/AnimatedCounter';
 import { useWonModes } from './WonModesContext';
@@ -24,7 +24,6 @@ const ATTRIBUTES: { key: Exclude<keyof VJLPerson, 'id'>; label: string }[] = [
 ];
 
 const GAME_MODE = 'classic';
-
 
 const ClassicPage: React.FC = () => {
   const [answer, setAnswer] = useState<VJLPerson | null>(null);
@@ -46,16 +45,19 @@ const ClassicPage: React.FC = () => {
     (async () => {
       setLoading(true);
       try {
-        // Récupère la réponse du jour et l'id de partie depuis le backend
-        const today = getGameIdForToday();
+        const today = await fetchTodayFromBackend();
         const { id: answerId, gameId } = await fetchAnswerIdAndGameId(GAME_MODE, today);
         setGameId(gameId);
         const answerObj = getPersonById(answerId);
         setAnswer(answerObj || null);
         // Puis charge la partie
         const data = await apiLoadGame(GAME_MODE);
-        setGuesses(data.guesses || []);
-        setHasWon(data.hasWon || false);
+        let state = data;
+        if (Array.isArray(data)) {
+          state = data.find((s) => s.gameId === gameId) || { guesses: [], hasWon: false, gameId };
+        }
+        setGuesses(state.guesses || []);
+        setHasWon(state.hasWon || false);
       } finally {
         setLoading(false);
       }
@@ -144,13 +146,6 @@ const ClassicPage: React.FC = () => {
 
   // Génération du texte d'historique à copier (reprend la logique de VJLGuessHistory)
   // Utilise la fonction utilitaire commune
-  function getGameIdForToday() {
-    const now = new Date();
-    return `${now.getUTCFullYear()}-${(now.getUTCMonth()+1).toString().padStart(2,'0')}-${now.getUTCDate().toString().padStart(2,'0')}`;
-  }
-
-  // Génération du texte d'historique à copier (reprend la logique de VJLGuessHistory)
-  // Utilise la fonction utilitaire commune
   function getShareText(): string {
     if (!answer) return '';
     return buildShareText(guesses.map(id => getPersonById(id)!), answer, ATTRIBUTES, 'classique', gameId ? String(gameId) : '?');
@@ -176,10 +171,11 @@ const ClassicPage: React.FC = () => {
         const diff = next.getTime() - now.getTime();
         if (diff <= 0) {
           setCountdown('00:00:00');
-          await apiSaveGame(GAME_MODE, guesses, false); // Sauvegarde les données avant suppression
-          setTimeout(() => {
+          // On attend un court instant pour afficher 00:00:00 puis on reload
+          setTimeout(async () => {
+            // On recharge la page pour obtenir la nouvelle partie (et donc la nouvelle date du backend)
             window.location.reload();
-          }, 800); // petit délai pour voir le 00:00:00
+          }, 800);
           break;
         }
         const h = Math.floor(diff / 3600000);

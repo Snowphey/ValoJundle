@@ -16,10 +16,20 @@ const ANSWERS_FILE = path.join(__dirname, 'src', 'data', 'answers.json');
 app.use(cors());
 app.use(express.json());
 
-// Helper: get today's gameId (UTC)
+// Helper: get today's gameId (Europe/Paris)
 function getGameIdForToday() {
   const now = new Date();
-  return `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}-${now.getUTCDate().toString().padStart(2, '0')}`;
+  // Obtenir la date en heure de Paris
+  const parisDateParts = new Intl.DateTimeFormat('fr-FR', {
+    timeZone: 'Europe/Paris',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now);
+  const year = parisDateParts.find(p => p.type === 'year')?.value;
+  const month = parisDateParts.find(p => p.type === 'month')?.value;
+  const day = parisDateParts.find(p => p.type === 'day')?.value;
+  return `${year}-${month}-${day}`;
 }
 
 // Helper: read/write JSON file
@@ -156,11 +166,14 @@ app.get('/api/game/:userId/:mode', (req, res) => {
   // S'assure que la réponse du jour est bien générée et stockée
   const { gameId } = getAnswerForDay(mode, today, vjlData);
   let user = games[userId] || {};
-  let state = user[mode] || null;
-  // Reset if not today's game
-  if (!state || state.gameId !== gameId) {
+  let states = user[mode] || [];
+  if (!Array.isArray(states)) states = states ? [states] : [];
+  // Cherche si une partie existe déjà pour ce gameId
+  let state = states.find(s => s.gameId === gameId);
+  if (!state) {
     state = { guesses: [], hasWon: false, gameId };
-    user[mode] = state;
+    states.push(state);
+    user[mode] = states;
     games[userId] = user;
     writeGames(games);
   }
@@ -175,9 +188,25 @@ app.post('/api/game/:userId/:mode', (req, res) => {
   const today = getGameIdForToday();
   const { gameId } = getAnswerForDay(mode, today, vjlData);
   if (!games[userId]) games[userId] = {};
-  games[userId][mode] = { guesses, hasWon, gameId };
+  let states = games[userId][mode] || [];
+  if (!Array.isArray(states)) states = states ? [states] : [];
+  // Cherche si une partie existe déjà pour ce gameId
+  let state = states.find(s => s.gameId === gameId);
+  if (!state) {
+    state = { guesses, hasWon, gameId };
+    states.push(state);
+  } else {
+    state.guesses = guesses;
+    state.hasWon = hasWon;
+  }
+  games[userId][mode] = states;
   writeGames(games);
   res.json({ ok: true });
+});
+
+// Ajout d'une route pour exposer la date du jour (Europe/Paris) au frontend
+app.get('/api/today', (req, res) => {
+  res.json({ today: getGameIdForToday() });
 });
 
 app.use(express.static('dist'));
