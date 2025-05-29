@@ -7,8 +7,8 @@ RUN npm run build
 
 FROM node:alpine
 WORKDIR /app
-COPY --from=builder /src/dist .
-COPY --from=builder /src/package*.json .
-COPY --from=builder /src/backend.js .
+COPY --from=builder /src/package*.json /src/.env /src/backend.js .
+COPY --from=builder /src/dist dist
+COPY --from=builder /src/src/data src/data
 RUN npm install --only=production
 CMD ["node", "backend.js"]
