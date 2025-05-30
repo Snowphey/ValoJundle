@@ -7,7 +7,7 @@ import AnimatedCounter from './components/AnimatedCounter';
 import { useWonModes } from './WonModesContext';
 import CitationGuessHistory from './components/CitationGuessHistory';
 import { buildShareText } from './utils/buildShareText';
-import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswerIdAndGameId, fetchWinnersCount, getPersonById, fetchTodayFromBackend, fetchCitationOfTheDay, fetchGuessCounts } from './api/api';
+import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswerIdAndGameId, fetchWinnersCount, getPersonById, fetchTodayFromBackend, fetchCitationOfTheDay, fetchGuessCounts, fetchCronReadyFromBackend } from './api/api';
 
 const GAME_MODE = 'citation';
 
@@ -165,6 +165,14 @@ const CitationPage: React.FC = () => {
         const diff = next.getTime() - nowParis.getTime();
         if (diff <= 0) {
           setCountdown('00:00:00');
+          // Attendre que le backend ait bien fini le cron (flag explicite)
+          let ready = false;
+          while (!ready) {
+            try {
+              ready = await fetchCronReadyFromBackend();
+            } catch {}
+            if (!ready) await new Promise(res => setTimeout(res, 1000));
+          }
           window.location.reload();
           break;
         }
