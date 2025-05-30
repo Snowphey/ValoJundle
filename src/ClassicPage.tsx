@@ -6,7 +6,7 @@ import './ValoJundleTheme.css';
 import vjlData from './data/vjl.json';
 import VictoryBox from './components/VictoryBox';
 import { buildShareText } from './utils/buildShareText';
-import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswerIdAndGameId, fetchWinnersCount, getPersonById, fetchTodayFromBackend } from './api/api';
+import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswerIdAndGameId, fetchWinnersCount, getPersonById, fetchTodayFromBackend, fetchCronReadyFromBackend } from './api/api';
 import type { VJLPerson } from './types/VJLPerson';
 import AnimatedCounter from './components/AnimatedCounter';
 import { useWonModes } from './WonModesContext';
@@ -186,7 +186,15 @@ const ClassicPage: React.FC = () => {
         const diff = next.getTime() - nowParis.getTime();
         if (diff <= 0) {
           setCountdown('00:00:00');
-          setTimeout(() => window.location.reload(), 800);
+          // Attendre que le backend ait bien fini le cron (flag explicite)
+          let ready = false;
+          while (!ready) {
+            try {
+              ready = await fetchCronReadyFromBackend();
+            } catch {}
+            if (!ready) await new Promise(res => setTimeout(res, 1000));
+          }
+          window.location.reload();
           break;
         }
         const h = Math.floor(diff / 3600000);

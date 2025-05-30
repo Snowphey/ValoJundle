@@ -18,6 +18,14 @@ const ANSWERS_FILE = path.join(__dirname, 'src', 'data', 'answers.json');
 app.use(cors());
 app.use(express.json());
 
+// --- FLAG CRON READY ---
+let cronReady = true; // true au démarrage, false pendant le cron
+
+// Route pour exposer l'état du cron
+app.get('/api/cron-ready', (req, res) => {
+  res.json({ ready: cronReady });
+});
+
 // Helper: get today's gameId (Europe/Paris)
 function getParisDateObj(date = new Date()) {
   // Retourne un objet Date à l'heure Europe/Paris correspondant à la date passée (ou maintenant)
@@ -225,12 +233,14 @@ app.get('/api/today', (req, res) => {
 
 // Planifie une purge quotidienne à minuit Europe/Paris
 cron.schedule('0 0 * * *', () => {
+  cronReady = false; // Le cron commence
   const today = getGameIdForToday();
   writeGames({});
   // Utilise la liste centralisée des modes
   for (const modeObj of modes) {
     getAnswerForDay(modeObj.key, today, vjlData);
   }
+  cronReady = true; // Le cron est fini, tout est prêt
   console.log(`[CRON] Purge quotidienne effectuée pour la date ${today} (games.json vidé, answers du jour générées)`);
 }, {
   timezone: 'Europe/Paris'

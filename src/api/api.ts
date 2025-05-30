@@ -66,3 +66,10 @@ export async function fetchTodayFromBackend(): Promise<string> {
   const data = await res.json();
   return data.today;
 }
+
+export async function fetchCronReadyFromBackend(): Promise<boolean> {
+  const res = await fetch(`${API_URL}/cron-ready`);
+  if (!res.ok) throw new Error('Erreur récupération état cron');
+  const data = await res.json();
+  return !!data.ready;
+}
