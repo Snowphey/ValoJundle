@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import VJLGuessInput from './components/VJLGuessInput';
-import VJLGuessHistory from './components/VJLGuessHistory';
+import ClassicGuessHistory from './components/ClassicGuessHistory';
 import ColorIndicator from './components/ColorIndicator';
 import './ValoJundleTheme.css';
 import vjlData from './data/vjl.json';
 import VictoryBox from './components/VictoryBox';
 import { buildShareText } from './utils/buildShareText';
-import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswerIdAndGameId, fetchWinnersCount, getPersonById, fetchTodayFromBackend, fetchCronReadyFromBackend } from './api/api';
+import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswerIdAndGameId, fetchWinnersCount, getPersonById, fetchTodayFromBackend, fetchCronReadyFromBackend, fetchGuessCounts } from './api/api';
 import type { VJLPerson } from './types/VJLPerson';
 import AnimatedCounter from './components/AnimatedCounter';
 import { useWonModes } from './WonModesContext';
@@ -38,6 +38,7 @@ const ClassicPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [winnersCount, setWinnersCount] = useState<number>(0);
   const [gameId, setGameId] = useState<number | null>(null);
+  const [guessCounts, setGuessCounts] = useState<Record<number, number>>({});
   const { refreshWonModes } = useWonModes();
 
   // Chargement initial depuis le backend
@@ -79,6 +80,20 @@ const ClassicPage: React.FC = () => {
     }
     fetchCount();
     const interval = setInterval(fetchCount, 2000); // rafraîchit toutes les 2s
+    return () => { stop = true; clearInterval(interval); };
+  }, []);
+
+  // Ajout récupération guessCounts (mock)
+  useEffect(() => {
+    let stop = false;
+    async function fetchCounts() {
+      try {
+        const counts = await fetchGuessCounts(GAME_MODE);
+        if (!stop) setGuessCounts(counts);
+      } catch {}
+    }
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 2000);
     return () => { stop = true; clearInterval(interval); };
   }, []);
 
@@ -140,7 +155,7 @@ const ClassicPage: React.FC = () => {
     }
   }, [scrollToResult]);
 
-  // Génération du texte d'historique à copier (reprend la logique de VJLGuessHistory)
+  // Génération du texte d'historique à copier (reprend la logique de ClassicGuessHistory)
   // Utilise la fonction utilitaire commune
   function getShareText(): string {
     if (!answer) return '';
@@ -243,12 +258,13 @@ const ClassicPage: React.FC = () => {
         </span>
       </div>
       <div style={{ marginBottom: 18 }} />
-      <VJLGuessHistory
+      <ClassicGuessHistory
         guesses={guessObjects} // Convertit les ids en objets
         answer={answer}
         attributes={ATTRIBUTES}
         animatingIndex={animatingIndex}
         showResult={showResult}
+        guessCounts={guessCounts}
       />
       <ColorIndicator />
       {hasWon && (

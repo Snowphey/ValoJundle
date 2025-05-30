@@ -3,9 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
-import vjlData from './src/data/vjl.json' with { type: 'json' };
 import cron from 'node-cron';
-import modes from './src/data/modes.json' assert { type: 'json' };
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -14,6 +12,10 @@ const __dirname = path.dirname(__filename);
 const DATA_FILE = path.join(__dirname, 'src', 'data', 'games.json');
 // --- LOGIQUE DE REPONSE DU JOUR ET GESTION DES IDS ---
 const ANSWERS_FILE = path.join(__dirname, 'src', 'data', 'answers.json');
+
+const modes = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'modes.json'), 'utf8'));
+
+const vjlData = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'vjl.json'), 'utf8'));
 
 app.use(cors());
 app.use(express.json());
@@ -229,6 +231,85 @@ app.post('/api/game/:userId/:mode', (req, res) => {
 // Ajout d'une route pour exposer la date du jour (Europe/Paris) au frontend
 app.get('/api/today', (req, res) => {
   res.json({ today: getGameIdForToday() });
+});
+
+// GET /api/guess-counts/:mode
+// Renvoie pour la partie du jour un objet { [personId]: count } où count = nombre de joueurs ayant tenté ce membre en guess (au moins une fois)
+app.get('/api/guess-counts/:mode', (req, res) => {
+  const { mode } = req.params;
+  const games = readGames();
+  const today = getGameIdForToday();
+  // Récupère la bonne réponse du jour pour ce mode
+  const answers = readAnswers();
+  let todayNumericId = null;
+  for (const ansId in answers) {
+    if (answers[ansId] && answers[ansId].date === today) {
+      todayNumericId = Number(ansId);
+      break;
+    }
+  }
+  const counts = {};
+  if (todayNumericId !== null) {
+    for (const userId in games) {
+      const user = games[userId];
+      const state = user[mode];
+      if (state && state.gameId === todayNumericId && Array.isArray(state.guesses)) {
+        for (const pid of state.guesses) {
+          counts[pid] = (counts[pid] || 0) + 1;
+        }
+      }
+    }
+  }
+  res.json(counts);
+});
+
+// GET /api/random-citation/:discordUserId
+// Renvoie une citation Discord aléatoire pour un userId donné (ou null si aucune)
+app.get('/api/random-citation/:discordUserId', (req, res) => {
+  const { discordUserId } = req.params;
+  const citationsPath = path.join(__dirname, 'discord', 'citations.json');
+  let citations = [];
+  try {
+    citations = JSON.parse(fs.readFileSync(citationsPath, 'utf8'));
+  } catch {
+    return res.json(null);
+  }
+
+  // Filtrer les citations de ce userId
+  const userCitations = citations.filter(c => c.userId === discordUserId && Array.isArray(c.messages) && c.messages.length > 0);
+  if (!userCitations.length) return res.json(null);
+  // Prendre un message non vide au hasard parmi tous les messages de ce user
+  const allMessages = userCitations.flatMap(c => c.messages.filter(m => m.content && m.content.trim().length > 0));
+  if (!allMessages.length) return res.json(null);
+  const randomMsg = allMessages[Math.floor(Math.random() * allMessages.length)];
+  res.json(randomMsg);
+});
+
+// GET /api/citation-of-the-day/:discordUserId
+// Renvoie la citation du jour pour ce userId (déterministe, une seule par jour)
+app.get('/api/citation-of-the-day/:discordUserId', (req, res) => {
+  const { discordUserId } = req.params;
+  const citationsPath = path.join(__dirname, 'discord', 'citations.json');
+  let citations = [];
+  try {
+    citations = JSON.parse(fs.readFileSync(citationsPath, 'utf8'));
+  } catch {
+    return res.json(null);
+  }
+  // Filtrer les citations de ce userId
+  const userCitations = citations.filter(c => c.userId === discordUserId && Array.isArray(c.messages) && c.messages.length > 0);
+  if (!userCitations.length) return res.json(null);
+  // Prendre tous les messages non vides
+  const allMessages = userCitations.flatMap(c => c.messages.filter(m => m.content && m.content.trim().length > 0));
+  if (!allMessages.length) return res.json(null);
+  // Déterminer la citation du jour de façon déterministe (date + discordUserId)
+  const today = getGameIdForToday();
+  let hash = 0;
+  const str = today + '-' + discordUserId;
+  for (let i = 0; i < str.length; i++) hash = ((hash << 5) - hash) + str.charCodeAt(i);
+  hash = Math.abs(hash);
+  const idx = hash % allMessages.length;
+  res.json(allMessages[idx]);
 });
 
 // Planifie une purge quotidienne à minuit Europe/Paris

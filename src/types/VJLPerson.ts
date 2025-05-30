@@ -12,4 +12,5 @@ export interface VJLPerson {
   option: string;
   birthRegion: string;
   birthDate: string;
+  discordUserId: string;
 }

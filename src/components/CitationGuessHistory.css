@@ -1,0 +1,84 @@
+/* CitationGuessHistory.css */
+.citation-guess-history {
+  max-width: 420px;
+  margin: 0 auto 18px auto;
+  width: 100%;
+}
+.citation-guess-box {
+  background-color: #df5858;
+  border: 2px solid #ff8686;
+  border-radius: 3px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px #0006;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 64px;
+  padding: 8px 0;
+  transition: transform 0.12s;
+  font-family: 'Friz Quadrata Std', Mobilo, Helvetica, Arial, sans-serif;   
+}
+.citation-guess-box:hover {
+  transform: scale(1.025);
+  box-shadow: 0 4px 16px #0008;
+}
+.citation-guess-people {
+  position: absolute;
+  top: 2px;
+  right: 14px;
+  text-align: center;
+  color: #fff;
+}
+.citation-guess-people svg {
+  display: block;
+  margin: 0 auto;
+}
+.citation-guess-people-count {
+  font-weight: 700;
+  font-size: 15px;
+  color: #fff;
+  text-shadow: 0 1px 2px #0008;
+}
+.citation-guess-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+.citation-guess-pfp {
+  width: 54px;
+  height: 54px;
+  margin-bottom: 4px;
+  border: 2px solid #000000;
+}
+.citation-guess-name {
+  color: #fff;
+  font-weight: 600;
+  font-size: 20px;
+  text-shadow: 0 1px 2px #0008;
+}
+@keyframes headshake {
+  0% { transform: translateX(0); }
+  15% { transform: translateX(-10px); }
+  30% { transform: translateX(8px); }
+  45% { transform: translateX(-6px); }
+  60% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
+}
+.citation-guess-box.headshake {
+  animation: headshake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+@keyframes tada {
+  0% { transform: scale3d(1, 1, 1); }
+  10%, 20% { transform: scale3d(0.9, 0.9, 0.9) rotate(-3deg); }
+  30%, 50%, 70%, 90% { transform: scale3d(1.1, 1.1, 1.1) rotate(3deg); }
+  40%, 60%, 80% { transform: scale3d(1.1, 1.1, 1.1) rotate(-3deg); }
+  100% { transform: scale3d(1, 1, 1); }
+}
+.citation-guess-box.tada {
+  background-color: #35b956;
+  border: 2px solid #fff;
+  animation: tada 0.7s cubic-bezier(.36,.07,.19,.97) both;
+}

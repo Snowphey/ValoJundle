@@ -73,3 +73,17 @@ export async function fetchCronReadyFromBackend(): Promise<boolean> {
   const data = await res.json();
   return !!data.ready;
 }
+
+// Citation du jour (déterministe)
+export async function fetchCitationOfTheDay(discordUserId: string) {
+  const res = await fetch(`${API_URL}/citation-of-the-day/${discordUserId}`);
+  if (!res.ok) throw new Error('Erreur récupération citation du jour');
+  return await res.json();
+}
+
+// Nombre de guesses pour chaque id (Citation ou Classic)
+export async function fetchGuessCounts(mode: string): Promise<Record<number, number>> {
+  const res = await fetch(`${API_URL}/guess-counts/${mode}`);
+  if (!res.ok) throw new Error('Erreur récupération compteur de guesses');
+  return await res.json();
+}

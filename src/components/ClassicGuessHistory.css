@@ -1,0 +1,105 @@
+/* ClassicGuessHistory.css */
+.classic-guess-history {
+  margin: 0 auto;
+  max-width: 60em;
+  border-radius: 12px;
+  padding: 16px 0 8px 0;
+  box-shadow: 0 2px 16px #000a;
+  margin-bottom: 24px;
+}
+.classic-guess-history-row,
+.classic-guess-history-header {
+  justify-content: center;
+  column-gap: 0.25em;
+  font-weight: bold;
+  font-size: 1em;
+  background: none; 
+  margin-bottom: 1em;
+}
+
+.classic-guess-history-row {
+  background: none;
+}
+
+.classic-guess-history-scroll {
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 600px) {
+  .classic-guess-history-scroll {
+    max-width: 100vw;
+    overflow-x: auto; /* Activé uniquement sur mobile */
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+  }
+  .classic-guess-history {
+    min-width: calc(80px * var(--vjl-nb-cols, 10));
+    /* 80px par colonne, dont pfp, ajustable dynamiquement */
+    width: fit-content;
+  }
+}
+
+@media (max-width: 400px) {
+  .classic-guess-history {
+    min-width: calc(48px * var(--vjl-nb-cols, 10));
+    width: fit-content;
+    font-size: 0.8em;
+    padding: 4px 0 2px 0;
+  }
+  .classic-guess-history-scroll {
+    max-width: 100vw;
+    margin-bottom: 4px;
+  }
+}
+
+.classic-guess-people {
+  position: absolute;
+  top: 2px;
+  right: 8px;
+  text-align: center;
+  color: #fff;
+  z-index: 2;
+}
+.classic-guess-people img {
+  display: block;
+  margin: 0 auto;
+}
+.classic-guess-people-count {
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+  text-shadow: 0 1px 2px #0008;
+}
+
+.classic-guess-history-header {
+  position: relative;
+}
+.classic-guess-history-header .card-label {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 2.2em;
+}
+.classic-guess-history-header .card-label span {
+  line-height: 1.1;
+  display: inline-block;
+}
+.classic-guess-history-header .card-label::after {
+  content: '';
+  display: block;
+  width: 70%;
+  margin-left: auto;
+  margin-right: auto;
+  border-left: none;
+  border-top: none;
+  border-right: none;
+  border-bottom: 3px solid #fff;
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: -10px;
+  z-index: 1;
+}

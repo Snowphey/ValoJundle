@@ -15,6 +15,12 @@ dist-ssr
 src/data/answers.json
 src/data/games.json
 
+discord/config.json
+discord/raw_data
+
+discord/attachments.json
+discord/citations.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

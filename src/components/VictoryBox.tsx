@@ -70,7 +70,13 @@ const VictoryBox: React.FC<VictoryBoxProps> = ({
         >
           <img src={nextModeImg} alt={nextMode} className="victory-next-mode-img" />
           <div className="victory-next-mode-overlay">
-            Citation<br />Avec une citation du Discord
+            {nextMode.toLowerCase() === 'citation' ? (
+              <>Citation<br />Avec une citation du Discord</>
+            ) : nextMode.toLowerCase() === 'image' ? (
+              <>Image<br />Avec une image du Discord</>
+            ) : (
+              nextMode
+            )}
           </div>
         </div>
         {/* Rope et logos des modes ici, à compléter selon assets */}

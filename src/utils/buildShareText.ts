@@ -17,9 +17,14 @@ export function buildShareText(
 ): string {
   if (!guesses.length) return '';
   const tries = guesses.length;
+
+  if (mode === 'citation') {
+    return `J'ai trouvé le membre #ValoJundle #${gameNumber} avec une citation en ${tries} coup${tries > 1 ? 's' : ''}  ⚔️\n\n${URL}`;
+  }
+
   let text = `J'ai trouvé le membre #ValoJundle #${gameNumber} en mode ${mode} en ${tries} coup${tries > 1 ? "s" : ""}  ⚔️\n`;
   const colorMap: Record<string, string> = {
-    correct: '🟩',
+    correct: '🟩',  
     partial: '🟧',
     incorrect: '🟥',
     higher: '⬆️',

@@ -1,7 +1,7 @@
 import React from "react";
 import CardColumn from "./CardColumn";
 import type { CardStatus } from "./CardColumn";
-import "./VJLGuessHistory.css";
+import "./ClassicGuessHistory.css";
 import { Tooltip } from "./Tooltip";
 import type { VJLPerson } from '../types/VJLPerson';
 
@@ -10,12 +10,13 @@ interface Attribute {
   label: string;
 }
 
-interface VJLGuessHistoryProps {
+interface ClassicGuessHistoryProps {
   guesses: VJLPerson[];
   answer: VJLPerson;
   attributes: Attribute[];
   animatingIndex: number | null;
   showResult: boolean;
+  guessCounts: Record<number, number>;
 }
 
 function getStatus(guess: VJLPerson, answer: VJLPerson, key: keyof VJLPerson): CardStatus {
@@ -43,7 +44,7 @@ function getStatus(guess: VJLPerson, answer: VJLPerson, key: keyof VJLPerson): C
   return 'incorrect';
 }
 
-const VJLGuessHistory: React.FC<VJLGuessHistoryProps> = ({ guesses, answer, attributes }) => {
+const ClassicGuessHistory: React.FC<ClassicGuessHistoryProps> = ({ guesses, answer, attributes, guessCounts }) => {
   // On définit dynamiquement le nombre de colonnes pour le CSS (inclut pfp)
   React.useEffect(() => {
     const root = document.documentElement;
@@ -53,11 +54,11 @@ const VJLGuessHistory: React.FC<VJLGuessHistoryProps> = ({ guesses, answer, attr
   if (guesses.length === 0) return null;
 
   return (
-    <div className="vjl-guess-history-scroll">
-      <div className="vjl-guess-history">
+    <div className="classic-guess-history-scroll">
+      <div className="classic-guess-history">
         {guesses.length > 0 && (
           <div
-            className="vjl-guess-history-header"
+            className="classic-guess-history-header"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -109,18 +110,28 @@ const VJLGuessHistory: React.FC<VJLGuessHistoryProps> = ({ guesses, answer, attr
           return (
             <div
               key={guessIdx}
-              className="vjl-guess-history-row"
+              className="classic-guess-history-row"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 width: '100%',
                 gap: 0,
+                position: 'relative',
               }}
             >
               {attributes.map((attr, i) => {
                 const delay = attr.key === 'pfp' ? 0 : (i - 1) * 500;
                 return (
-                  <div key={attr.key + '-' + guessIdx} style={{ flex: '1 1 0', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <div key={attr.key + '-' + guessIdx} style={{ flex: '1 1 0', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+                    {/* Ajout du compteur en haut à droite de la pfp */}
+                    {attr.key === 'pfp' && (
+                      <div style={{ position: 'absolute', top: 2, right: 20, zIndex: 2 }}>
+                        <Tooltip content="Le nombre de joueurs qui ont également essayé ce membre">
+                          <img src="/people.png" alt="personnes" width={20} height={20} style={{ display: 'block', margin: '0 auto' }} />
+                          <div style={{ fontWeight: 700, fontSize: 13, color: '#fff', textShadow: '0 1px 2px #0008', textAlign: 'center' }}>{guessCounts[guess.id] ?? 0}</div>
+                        </Tooltip>
+                      </div>
+                    )}
                     <CardColumn
                       value={
                         attr.key === 'pfp'
@@ -159,4 +170,4 @@ const VJLGuessHistory: React.FC<VJLGuessHistoryProps> = ({ guesses, answer, attr
   );
 };
 
-export default VJLGuessHistory;
+export default ClassicGuessHistory;

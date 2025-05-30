@@ -1,3 +1,8 @@
+.tooltip-wrapper {
+  position: relative !important;
+  display: inline-block !important;
+  /* Force le wrapper à ne pas casser le flux ni la position absolue de l'enfant */
+}
 .tooltip-box {
   position: absolute;
   left: 50%;
@@ -16,6 +21,7 @@
   pointer-events: none;
   opacity: 0.98;
   transition: opacity 0.18s, transform 0.18s;
+  /* S'assure que le tooltip s'aligne toujours sur son parent direct */
 }
 .tooltip-top {
   bottom: 100%;
@@ -26,6 +32,19 @@
   top: 100%;
   margin-top: 10px;
   animation: tooltip-fade-in-down 0.18s;
+}
+/* Supprime tout style parasite sur le wrapper dans les guess box */
+.citation-guess-people .tooltip-wrapper {
+  position: absolute !important;
+  top: 8px;
+  right: 14px;
+  left: auto;
+  bottom: auto;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  background: none;
+  box-shadow: none;
 }
 @keyframes tooltip-fade-in-up {
   from { opacity: 0; transform: translateX(-50%) translateY(8px); }
