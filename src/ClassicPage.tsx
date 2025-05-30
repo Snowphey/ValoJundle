@@ -51,11 +51,7 @@ const ClassicPage: React.FC = () => {
         const answerObj = getPersonById(answerId);
         setAnswer(answerObj || null);
         // Puis charge la partie
-        const data = await apiLoadGame(GAME_MODE);
-        let state = data;
-        if (Array.isArray(data)) {
-          state = data.find((s) => s.gameId === gameId) || { guesses: [], hasWon: false, gameId };
-        }
+        const state = await apiLoadGame(GAME_MODE);
         setGuesses(state.guesses || []);
         setHasWon(state.hasWon || false);
       } finally {

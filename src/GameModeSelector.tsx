@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './GameModeSelector.css';
 import { Tooltip } from './components/Tooltip';
-import { MODES } from './data/modes';
+import modes from './data/modes.json';
 import { useWonModes } from './WonModesContext';
 
 const GameModeSelector: React.FC = () => {
@@ -15,7 +15,7 @@ const GameModeSelector: React.FC = () => {
     <div className="game-mode-selector">
       <div className="rope-bg"/>
       <div className="modes">
-        {MODES.map(mode => (
+        {modes.map(mode => (
           <div key={mode.key} className="mode-btn-wrapper">
             <Tooltip content={mode.label}>
               <button

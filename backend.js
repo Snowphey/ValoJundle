@@ -4,6 +4,8 @@ import path from 'path';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
 import vjlData from './src/data/vjl.json' with { type: 'json' };
+import cron from 'node-cron';
+import modes from './src/data/modes.json' assert { type: 'json' };
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -68,7 +70,7 @@ function writeAnswers(answers) {
   fs.writeFileSync(ANSWERS_FILE, JSON.stringify(answers, null, 2), 'utf8');
 }
 
-function getOrCreateGameNumericId(mode, date) {
+function getOrCreateAnswerNumericId(date) {
   let answers = readAnswers();
   // 1. Si une entrée a déjà la bonne date (peu importe les modes), on la réutilise
   for (const id in answers) {
@@ -83,7 +85,7 @@ function getOrCreateGameNumericId(mode, date) {
 
 function getAnswerForDay(mode, date, vjlData) {
   let answers = readAnswers();
-  const id = getOrCreateGameNumericId(mode, date);
+  const id = getOrCreateAnswerNumericId(date);
   if (!answers[id]) {
     answers[id] = { date, modes: {} };
   }
@@ -107,18 +109,18 @@ function getAnswerForDay(mode, date, vjlData) {
     const prevParis = new Date(dateParis);
     prevParis.setDate(prevParis.getDate() - 1);
     const prevGameId = `${prevParis.getFullYear()}-${(prevParis.getMonth()+1).toString().padStart(2,'0')}-${prevParis.getDate().toString().padStart(2,'0')}`;
-    let prevAnswers = [];
+    let prevAnswer = null;
     for (const prevId in answers) {
-      if (answers[prevId] && answers[prevId].date === prevGameId) {
-        prevAnswers = Object.values(answers[prevId].modes).map(m => m.answer);
+      if (answers[prevId] && answers[prevId].date === prevGameId && answers[prevId].modes && answers[prevId].modes[mode]) {
+        prevAnswer = answers[prevId].modes[mode].answer;
         break;
       }
     }
     // 2. Exclure les réponses déjà attribuées aux autres modes du jour
     const usedToday = Object.values(answers[id].modes).map(m => m.answer);
-    // 3. Générer une réponse qui n'est ni dans prevAnswers ni dans usedToday
+    // 3. Générer une réponse qui n'est ni la réponse du mode la veille ni déjà attribuée aujourd'hui
     const rand = getSeededRandom(date + '-' + mode);
-    let pool = vjlData.map(p => p.id).filter(pid => !prevAnswers.includes(pid) && !usedToday.includes(pid));
+    let pool = vjlData.map(p => p.id).filter(pid => pid !== prevAnswer && !usedToday.includes(pid));
     if (pool.length === 0) pool = vjlData.map(p => p.id); // fallback extrême
     let idx = Math.floor(rand() * pool.length);
     answers[id].modes[mode] = { answer: pool[idx] };
@@ -161,20 +163,16 @@ app.get('/api/game-count/:mode', (req, res) => {
     }
     for (const userId in games) {
       const user = games[userId];
-      let states = user[mode] || [];
-      if (!Array.isArray(states)) states = states ? [states] : [];
-      for (const state of states) {
-        if (
-          state &&
-          state.gameId === todayNumericId &&
-          state.hasWon &&
-          Array.isArray(state.guesses) &&
-          state.guesses.length > 0 &&
-          state.guesses[state.guesses.length - 1] === todayAnswerId
-        ) {
-          count++;
-          break; // Un seul win par user/mode/jour
-        }
+      const state = user[mode];
+      if (
+        state &&
+        state.gameId === todayNumericId &&
+        state.hasWon &&
+        Array.isArray(state.guesses) &&
+        state.guesses.length > 0 &&
+        state.guesses[state.guesses.length - 1] === todayAnswerId
+      ) {
+        count++;
       }
     }
   }
@@ -189,14 +187,10 @@ app.get('/api/game/:userId/:mode', (req, res) => {
   // S'assure que la réponse du jour est bien générée et stockée
   const { gameId } = getAnswerForDay(mode, today, vjlData);
   let user = games[userId] || {};
-  let states = user[mode] || [];
-  if (!Array.isArray(states)) states = states ? [states] : [];
-  // Cherche si une partie existe déjà pour ce gameId
-  let state = states.find(s => s.gameId === gameId);
-  if (!state) {
+  let state = user[mode] || null;
+  if (!state || typeof state !== 'object') {
     state = { guesses: [], hasWon: false, gameId };
-    states.push(state);
-    user[mode] = states;
+    user[mode] = state;
     games[userId] = user;
     writeGames(games);
   }
@@ -211,18 +205,15 @@ app.post('/api/game/:userId/:mode', (req, res) => {
   const today = getGameIdForToday();
   const { gameId } = getAnswerForDay(mode, today, vjlData);
   if (!games[userId]) games[userId] = {};
-  let states = games[userId][mode] || [];
-  if (!Array.isArray(states)) states = states ? [states] : [];
-  // Cherche si une partie existe déjà pour ce gameId
-  let state = states.find(s => s.gameId === gameId);
-  if (!state) {
+  let state = games[userId][mode] || null;
+  if (!state || typeof state !== 'object') {
     state = { guesses, hasWon, gameId };
-    states.push(state);
   } else {
     state.guesses = guesses;
     state.hasWon = hasWon;
+    state.gameId = gameId;
   }
-  games[userId][mode] = states;
+  games[userId][mode] = state;
   writeGames(games);
   res.json({ ok: true });
 });
@@ -230,6 +221,19 @@ app.post('/api/game/:userId/:mode', (req, res) => {
 // Ajout d'une route pour exposer la date du jour (Europe/Paris) au frontend
 app.get('/api/today', (req, res) => {
   res.json({ today: getGameIdForToday() });
+});
+
+// Planifie une purge quotidienne à minuit Europe/Paris
+cron.schedule('0 0 * * *', () => {
+  const today = getGameIdForToday();
+  writeGames({});
+  // Utilise la liste centralisée des modes
+  for (const modeObj of modes) {
+    getAnswerForDay(modeObj.key, today, vjlData);
+  }
+  console.log(`[CRON] Purge quotidienne effectuée pour la date ${today} (games.json vidé, answers du jour générées)`);
+}, {
+  timezone: 'Europe/Paris'
 });
 
 app.use(express.static('dist'));

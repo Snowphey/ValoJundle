@@ -1,0 +1,4 @@
+[
+  { "key": "classic", "label": "Classique", "img": "classic.png" },
+  { "key": "citation", "label": "Citation", "img": "citation.png" }
+]

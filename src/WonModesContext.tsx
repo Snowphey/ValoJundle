@@ -14,7 +14,7 @@ export const useWonModes = () => {
   return ctx;
 };
 
-import { MODES } from './data/modes';
+import modes from './data/modes.json';
 import { loadGame as apiLoadGame } from './api/api';
 
 export const WonModesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -24,7 +24,7 @@ export const WonModesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const userId = localStorage.getItem('valojundle-userid');
     if (userId) {
       const allModes = await Promise.all(
-        MODES.map(async m => {
+        modes.map(async m => {
           const g = await apiLoadGame(m.key);
           return g.hasWon ? m.key : null;
         })
