@@ -81,9 +81,16 @@ export async function fetchCitationOfTheDay(discordUserId: string) {
   return await res.json();
 }
 
-// Nombre de guesses pour chaque id (Citation ou Classic)
+// Nombre de guesses pour chaque id (Citation ou Classic ou Image)
 export async function fetchGuessCounts(mode: string): Promise<Record<number, number>> {
   const res = await fetch(`${API_URL}/guess-counts/${mode}`);
   if (!res.ok) throw new Error('Erreur récupération compteur de guesses');
+  return await res.json();
+}
+
+// Image du jour (déterministe)
+export async function fetchImageOfTheDay(discordUserId: string) {
+  const res = await fetch(`${API_URL}/image-of-the-day/${discordUserId}`);
+  if (!res.ok) throw new Error('Erreur récupération image du jour');
   return await res.json();
 }

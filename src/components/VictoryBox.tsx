@@ -8,8 +8,8 @@ interface VictoryBoxProps {
   memberIcon: string; // chemin de l'icône/photo
   memberName: string;
   attempts: number;
-  nextMode: string;
-  nextModeImg: string;
+  nextMode: string | null; // peut être null si pas de mode suivant
+  nextModeImg: string | null; // chemin de l'image du mode suivant, peut être null
   countdown: string;
   timezone: string;
 }
@@ -56,31 +56,34 @@ const VictoryBox: React.FC<VictoryBoxProps> = ({
       </div>
       <div className="victory-timezone">Fuseau horaire : {timezone}</div>
       <div className="victory-separator" />
-      <div className="victory-next-mode-label">Mode suivant :</div>
-      <div className="victory-next-mode-row">
-        <div
-          className="victory-next-mode-img-container"
-          onClick={() => navigate(`/${nextMode.toLowerCase()}`)}
-          tabIndex={0}
-          role="button"
-          aria-label={`Aller au mode ${nextMode}`}
-          onKeyDown={e => {
-            if (e.key === 'Enter' || e.key === ' ') navigate(`/${nextMode.toLowerCase()}`);
-          }}
-        >
-          <img src={nextModeImg} alt={nextMode} className="victory-next-mode-img" />
-          <div className="victory-next-mode-overlay">
-            {nextMode.toLowerCase() === 'citation' ? (
-              <>Citation<br />Avec une citation du Discord</>
-            ) : nextMode.toLowerCase() === 'image' ? (
-              <>Image<br />Avec une image du Discord</>
-            ) : (
-              nextMode
-            )}
+      {nextMode && nextModeImg ? (
+        <div className="victory-next-mode">
+          <div className="victory-next-mode-label">Mode suivant :</div>
+          <div className="victory-next-mode-row">
+            <div
+              className="victory-next-mode-img-container"
+              onClick={() => navigate(`/${nextMode.toLowerCase()}`)}
+              tabIndex={0}
+              role="button"
+              aria-label={`Aller au mode ${nextMode}`}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') navigate(`/${nextMode.toLowerCase()}`);
+              }}
+            >
+              <img src={nextModeImg} alt={nextMode} className="victory-next-mode-img" />
+              <div className="victory-next-mode-overlay">
+                {nextMode.toLowerCase() === 'citation' ? (
+                  <>Citation<br />Avec une citation du Discord</>
+                ) : nextMode.toLowerCase() === 'image' ? (
+                  <>Image<br />Avec une image du Discord</>
+                ) : (
+                  nextMode
+                )}
+              </div>
+            </div>
           </div>
         </div>
-        {/* Rope et logos des modes ici, à compléter selon assets */}
-      </div>
+      ) : null}
       <div className="victory-game-mode-selector">
         <GameModeSelector />
       </div>

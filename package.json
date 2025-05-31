@@ -12,6 +12,7 @@
   "dependencies": {
     "canvas-confetti": "^1.9.3",
     "cors": "^2.8.5",
+    "discord.js": "^14.19.3",
     "express": "^5.1.0",
     "node-cron": "^4.0.7",
     "react": "^19.1.0",

@@ -11,6 +11,37 @@ import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswerIdAndGameI
 
 const GAME_MODE = 'citation';
 
+// Contrôle de la date du puzzle (logique "Loldle")
+(function checkCitationDate() {
+  const getParisDateString = () => {
+    const now = new Date();
+    const parts = new Intl.DateTimeFormat('fr-FR', {
+      timeZone: 'Europe/Paris',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour12: false
+    }).formatToParts(now);
+    const year = parts.find(p => p.type === 'year')?.value;
+    const month = parts.find(p => p.type === 'month')?.value;
+    const day = parts.find(p => p.type === 'day')?.value;
+    return `${year}-${month}-${day}`;
+  };
+  const todayParis = getParisDateString();
+  const key = 'citation_last_played';
+  const lastPlayed = localStorage.getItem(key);
+  if (lastPlayed && lastPlayed !== todayParis) {
+    // Reset la partie (ici, on clear juste la clé du mode et reload)
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith('citation')) localStorage.removeItem(k);
+    });
+    localStorage.setItem(key, todayParis);
+    window.location.reload();
+  } else {
+    localStorage.setItem(key, todayParis);
+  }
+})();
+
 const CitationPage: React.FC = () => {
   const [answer, setAnswer] = useState<VJLPerson | null>(null);
   const [guesses, setGuesses] = useState<number[]>([]);

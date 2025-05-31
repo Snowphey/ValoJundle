@@ -1,14 +1,18 @@
 import express from 'express';
-import fs from 'fs';
+import fs, { read } from 'fs';
 import path from 'path';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
 import cron from 'node-cron';
+import { Client, GatewayIntentBits } from 'discord.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'discord', 'config.json'), 'utf8'));
+
 const DATA_FILE = path.join(__dirname, 'src', 'data', 'games.json');
 // --- LOGIQUE DE REPONSE DU JOUR ET GESTION DES IDS ---
 const ANSWERS_FILE = path.join(__dirname, 'src', 'data', 'answers.json');
@@ -48,6 +52,10 @@ function getParisDateObj(date = new Date()) {
   const minute = parts.find(p => p.type === 'minute')?.value;
   const second = parts.find(p => p.type === 'second')?.value;
   return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+}
+
+function getPersonById(id) {
+  return vjlData.find(p => p.id === id);
 }
 
 function getGameIdForToday() {
@@ -263,32 +271,47 @@ app.get('/api/guess-counts/:mode', (req, res) => {
   res.json(counts);
 });
 
-// GET /api/random-citation/:discordUserId
-// Renvoie une citation Discord aléatoire pour un userId donné (ou null si aucune)
-app.get('/api/random-citation/:discordUserId', (req, res) => {
-  const { discordUserId } = req.params;
-  const citationsPath = path.join(__dirname, 'discord', 'citations.json');
-  let citations = [];
-  try {
-    citations = JSON.parse(fs.readFileSync(citationsPath, 'utf8'));
-  } catch {
-    return res.json(null);
-  }
-
-  // Filtrer les citations de ce userId
-  const userCitations = citations.filter(c => c.userId === discordUserId && Array.isArray(c.messages) && c.messages.length > 0);
-  if (!userCitations.length) return res.json(null);
-  // Prendre un message non vide au hasard parmi tous les messages de ce user
-  const allMessages = userCitations.flatMap(c => c.messages.filter(m => m.content && m.content.trim().length > 0));
-  if (!allMessages.length) return res.json(null);
-  const randomMsg = allMessages[Math.floor(Math.random() * allMessages.length)];
-  res.json(randomMsg);
-});
-
 // GET /api/citation-of-the-day/:discordUserId
-// Renvoie la citation du jour pour ce userId (déterministe, une seule par jour)
 app.get('/api/citation-of-the-day/:discordUserId', (req, res) => {
   const { discordUserId } = req.params;
+  const answers = readAnswers();
+  const today = getGameIdForToday();
+  let answerId = null;
+  for (const id in answers) {
+    if (answers[id] && answers[id].date === today) {
+      answerId = id;
+      break;
+    }
+  }
+  if (!answerId || !answers[answerId].modes['citation']) {
+    return res.json(null);
+  }
+  // Si la citation du jour n'est pas encore générée, on la génère
+  if (answers[answerId].modes['citation'].citationIdx === undefined) {
+    generateCitationOfTheDay(today, discordUserId);
+    // Recharge après génération
+    const refreshed = readAnswers();
+    const refreshedAnswer = refreshed[answerId];
+    if (!refreshedAnswer || !refreshedAnswer.modes['citation'] || refreshedAnswer.modes['citation'].citationIdx === undefined) {
+      return res.json(null);
+    }
+    // On lit la citation du jour pour ce userId
+    const citationsPath = path.join(__dirname, 'discord', 'citations.json');
+    let citations = [];
+    try {
+      citations = JSON.parse(fs.readFileSync(citationsPath, 'utf8'));
+    } catch {
+      return res.json(null);
+    }
+    const userCitations = citations.filter(c => c.userId === discordUserId && Array.isArray(c.messages) && c.messages.length > 0);
+    if (!userCitations.length) return res.json(null);
+    const allMessages = userCitations.flatMap(c => c.messages.filter(m => m.content && m.content.trim().length > 0));
+    if (!allMessages.length) return res.json(null);
+    const idx = refreshedAnswer.modes['citation'].citationIdx;
+    if (idx >= allMessages.length) return res.json(null);
+    return res.json(allMessages[idx]);
+  }
+  // Sinon, on lit la citation du jour pour ce userId
   const citationsPath = path.join(__dirname, 'discord', 'citations.json');
   let citations = [];
   try {
@@ -296,24 +319,145 @@ app.get('/api/citation-of-the-day/:discordUserId', (req, res) => {
   } catch {
     return res.json(null);
   }
-  // Filtrer les citations de ce userId
   const userCitations = citations.filter(c => c.userId === discordUserId && Array.isArray(c.messages) && c.messages.length > 0);
   if (!userCitations.length) return res.json(null);
-  // Prendre tous les messages non vides
   const allMessages = userCitations.flatMap(c => c.messages.filter(m => m.content && m.content.trim().length > 0));
   if (!allMessages.length) return res.json(null);
-  // Déterminer la citation du jour de façon déterministe (date + discordUserId)
-  const today = getGameIdForToday();
-  let hash = 0;
-  const str = today + '-' + discordUserId;
-  for (let i = 0; i < str.length; i++) hash = ((hash << 5) - hash) + str.charCodeAt(i);
-  hash = Math.abs(hash);
-  const idx = hash % allMessages.length;
-  res.json(allMessages[idx]);
+  const idx = answers[answerId].modes['citation'].citationIdx;
+  if (idx >= allMessages.length) return res.json(null);
+  return res.json(allMessages[idx]);
 });
 
+// GET /api/image-of-the-day/:discordUserId
+app.get('/api/image-of-the-day/:discordUserId', async (req, res) => {
+  const { discordUserId } = req.params;
+
+  const answers = readAnswers();
+  const today = getGameIdForToday();
+  
+  let answerId = null;
+  for (const id in answers) {
+    if (answers[id] && answers[id].date === today) {
+      answerId = id;
+      break;
+    }
+  }
+  if (!answerId || !answers[answerId].modes['image']) {
+    return res.json(null);
+  }
+
+  // Si l'image du jour n'est pas encore générée, on la génère
+  if (!answers[answerId].modes['image'].imageUrl || !answers[answerId].modes['image'].url) {
+    await generateImageOfTheDay(today, discordUserId);
+    // Recharge après génération
+    const refreshed = readAnswers();
+    const refreshedAnswer = refreshed[answerId];
+    if (!refreshedAnswer || !refreshedAnswer.modes['image'] || !refreshedAnswer.modes['image'].imageUrl || !refreshedAnswer.modes['image'].url) {
+      return res.json(null);
+    }
+    // On renvoie l'image générée
+    return res.json({ imageUrl: refreshedAnswer.modes['image'].imageUrl, url: refreshedAnswer.modes['image'].url });
+  } else {
+    return res.json({ imageUrl: answers[answerId].modes['image'].imageUrl, url: answers[answerId].modes['image'].url });
+  }
+});
+
+// --- Génération citation du jour ---
+function generateCitationOfTheDay(today, discordUserId) {
+  const citationsPath = path.join(__dirname, 'discord', 'citations.json');
+  let citations = [];
+  try {
+    citations = JSON.parse(fs.readFileSync(citationsPath, 'utf8'));
+  } catch {
+    return;
+  }
+  const userCitations = citations.filter(c => c.userId === discordUserId && Array.isArray(c.messages) && c.messages.length > 0);
+  if (!userCitations.length) return;
+  const allMessages = userCitations.flatMap(c => c.messages.filter(m => m.content && m.content.trim().length > 0));
+  if (!allMessages.length) return;
+  const idx = Math.floor(Math.random() * allMessages.length);
+  // Écriture manuelle dans answers.json
+  let answers = readAnswers();
+  let answerId = null;
+  for (const id in answers) {
+    if (answers[id] && answers[id].date === today) {
+      answerId = id;
+      break;
+    }
+  }
+  if (!answerId) {
+    answerId = Object.keys(answers).map(Number).filter(n => !isNaN(n)).reduce((max, n) => Math.max(max, n), 0) + 1;
+    answers[answerId] = { date: today, modes: {} };
+  }
+  if (!answers[answerId].modes) answers[answerId].modes = {};
+  if (!answers[answerId].modes['citation']) answers[answerId].modes['citation'] = {};
+  answers[answerId].modes['citation'].citationIdx = idx;
+  writeAnswers(answers);
+}
+
+// --- Génération image du jour ---
+async function generateImageOfTheDay(today, discordUserId) {
+  const attachmentsPath = path.join(__dirname, 'discord', 'attachments.json');
+  let attachments = [];
+  try {
+    attachments = JSON.parse(fs.readFileSync(attachmentsPath, 'utf8'));
+  } catch {
+    return;
+  }
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+  const userAttachments = attachments.filter(a => a.userId === discordUserId && a.attachmentsCount > 0);
+  if (!userAttachments.length) return;
+  const randomAttachment = userAttachments[Math.floor(Math.random() * userAttachments.length)];
+  const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
+  let imageUrl = null;
+  let url = null;
+  try {
+    await new Promise((resolve, reject) => {
+      client.once('ready', async () => {
+        try {
+          const channel = await client.channels.fetch(randomAttachment.channelId);
+          if (!channel || !channel.isTextBased()) throw new Error('Not a text channel');
+          const message = await channel.messages.fetch(randomAttachment.messageId);
+          if (message.attachments && message.attachments.size > 0) {
+            const arr = Array.from(message.attachments.values()).filter(att => allowedTypes.includes(att.contentType));
+            if (arr.length > 0) {
+              const chosen = arr[Math.floor(Math.random() * arr.length)];
+              imageUrl = chosen.url;
+              url = message.url;
+            }
+          }
+        } catch (err) {}
+        client.destroy();
+        resolve();
+      });
+      client.login(config.token);
+    });
+  } catch {
+    return;
+  }
+  if (!imageUrl || !url) return;
+  // Écriture manuelle dans answers.json
+  let answers = readAnswers();
+  let answerId = null;
+  for (const id in answers) {
+    if (answers[id] && answers[id].date === today) {
+      answerId = id;
+      break;
+    }
+  }
+  if (!answerId) {
+    answerId = Object.keys(answers).map(Number).filter(n => !isNaN(n)).reduce((max, n) => Math.max(max, n), 0) + 1;
+    answers[answerId] = { date: today, modes: {} };
+  }
+  if (!answers[answerId].modes) answers[answerId].modes = {};
+  if (!answers[answerId].modes['image']) answers[answerId].modes['image'] = {};
+  answers[answerId].modes['image'].imageUrl = imageUrl;
+  answers[answerId].modes['image'].url = url;
+  writeAnswers(answers);
+}
+
 // Planifie une purge quotidienne à minuit Europe/Paris
-cron.schedule('0 0 * * *', () => {
+cron.schedule('0 0 * * *', async () => {
   cronReady = false; // Le cron commence
   const today = getGameIdForToday();
   writeGames({});
@@ -321,6 +465,10 @@ cron.schedule('0 0 * * *', () => {
   for (const modeObj of modes) {
     getAnswerForDay(modeObj.key, today, vjlData);
   }
+  const answers = readAnswers();
+  const todayAnswer = answers[Object.keys(answers).find(id => answers[id].date === today)];
+  generateCitationOfTheDay(today, getPersonById(todayAnswer.modes['citation'].answer).discordUserId);
+  await generateImageOfTheDay(today, getPersonById(todayAnswer.modes['image'].answer).discordUserId);
   cronReady = true; // Le cron est fini, tout est prêt
   console.log(`[CRON] Purge quotidienne effectuée pour la date ${today} (games.json vidé, answers du jour générées)`);
 }, {
