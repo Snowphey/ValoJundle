@@ -8,6 +8,7 @@ import { useWonModes } from './WonModesContext';
 import CitationGuessHistory from './components/CitationGuessHistory';
 import { buildShareText } from './utils/buildShareText';
 import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswerIdAndGameId, fetchWinnersCount, getPersonById, fetchTodayFromBackend, fetchImageOfTheDay, fetchGuessCounts, fetchCronReadyFromBackend } from './api/api';
+import AllModesShareBox from './components/AllModesShareBox';
 
 const GAME_MODE = 'image';
 
@@ -282,7 +283,7 @@ const ImagePage: React.FC = () => {
           <img
             src={image.imageUrl}
             alt="Image du jour"
-            style={{ maxWidth: '100%', borderRadius: 12, boxShadow: '0 2px 8px #0007' }}
+            style={{ maxWidth: 340, width: '100%', borderRadius: 12, boxShadow: '0 2px 8px #0007' }}
           />
         </div>
       </div>
@@ -358,6 +359,7 @@ const ImagePage: React.FC = () => {
               </span>
             </button>
           </div>
+          <AllModesShareBox />
         </div>
       )}
     </div>

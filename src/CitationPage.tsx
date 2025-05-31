@@ -8,6 +8,7 @@ import { useWonModes } from './WonModesContext';
 import CitationGuessHistory from './components/CitationGuessHistory';
 import { buildShareText } from './utils/buildShareText';
 import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswerIdAndGameId, fetchWinnersCount, getPersonById, fetchTodayFromBackend, fetchCitationOfTheDay, fetchGuessCounts, fetchCronReadyFromBackend } from './api/api';
+import AllModesShareBox from './components/AllModesShareBox';
 
 const GAME_MODE = 'citation';
 
@@ -354,6 +355,7 @@ const CitationPage: React.FC = () => {
               </span>
             </button>
           </div>
+          <AllModesShareBox />
         </div>
       )}
     </div>

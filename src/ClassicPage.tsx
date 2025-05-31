@@ -10,6 +10,7 @@ import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswerIdAndGameI
 import type { VJLPerson } from './types/VJLPerson';
 import AnimatedCounter from './components/AnimatedCounter';
 import { useWonModes } from './WonModesContext';
+import AllModesShareBox from './components/AllModesShareBox';
 
 const ATTRIBUTES: { key: Exclude<keyof VJLPerson, 'id'>; label: string }[] = [
   { key: 'pfp', label: 'Membre' },
@@ -322,6 +323,7 @@ const ClassicPage: React.FC = () => {
                 </button>
             </div>
           </div>
+          <AllModesShareBox />
         </>
       )}
       <div style={{ marginTop: 36 }} />
