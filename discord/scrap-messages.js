@@ -35,13 +35,28 @@ client.once('ready', async () => {
             for (const message of fetchedMessages.values()) {
                 const attachmentsCount = message.attachments ? message.attachments.size : 0;
 
+                // Resolve user and channel mentions (<@userId>, <@!userId>, <#channelId>) to usernames/channel names
+                let resolvedContent = message.content || '';
+                if (resolvedContent) {
+                    // Replace user mentions
+                    resolvedContent = resolvedContent.replace(/<@!?([0-9]+)>/g, (match, userId) => {
+                        const user = message.mentions.users.get(userId);
+                        return user ? `@${user.username}` : match;
+                    });
+                    // Replace channel mentions
+                    resolvedContent = resolvedContent.replace(/<#(\d+)>/g, (match, channelId) => {
+                        const channelObj = message.mentions.channels?.get(channelId) || message.guild.channels.cache.get(channelId);
+                        return channelObj ? `#${channelObj.name}` : match;
+                    });
+                }
+
                 messages.push({
                     author: message.author.username,
                     userId: message.author.id,
                     guildId: guild.id,
                     channelId: channel.id,
                     messageId: message.id,
-                    content: message.content || '',
+                    content: resolvedContent,
                     timestamp: message.createdTimestamp,
                     url: message.url,
                     attachmentsCount: attachmentsCount
