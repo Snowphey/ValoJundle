@@ -11,6 +11,8 @@ import type { VJLPerson } from './types/VJLPerson';
 import AnimatedCounter from './components/AnimatedCounter';
 import { useWonModes } from './WonModesContext';
 import AllModesShareBox from './components/AllModesShareBox';
+import { getAnswerForDate } from './utils/getAnswerForDate';
+import YesterdayAnswerBox from './components/YesterdayAnswerBox';
 
 const ATTRIBUTES: { key: Exclude<keyof VJLPerson, 'id'>; label: string }[] = [
   { key: 'pfp', label: 'Membre' },
@@ -70,6 +72,9 @@ const ClassicPage: React.FC = () => {
   const [winnersCount, setWinnersCount] = useState<number>(0);
   const [gameId, setGameId] = useState<number | null>(null);
   const [guessCounts, setGuessCounts] = useState<Record<number, number>>({});
+  const [myRank, setMyRank] = useState<number | null>(null);
+  const [yesterdayAnswer, setYesterdayAnswer] = useState<VJLPerson | null>(null);
+  const [yesterdayGameId, setYesterdayGameId] = useState<number | null>(null);
   const { refreshWonModes } = useWonModes();
 
   // Chargement initial depuis le backend
@@ -86,6 +91,7 @@ const ClassicPage: React.FC = () => {
         const state = await apiLoadGame(GAME_MODE);
         setGuesses(state.guesses || []);
         setHasWon(state.hasWon || false);
+        if (typeof state.rank === 'number') setMyRank(state.rank);
       } finally {
         setLoading(false);
       }
@@ -95,9 +101,9 @@ const ClassicPage: React.FC = () => {
   // Sauvegarde la partie à chaque changement
   useEffect(() => {
     if (!loading) {
-      apiSaveGame(GAME_MODE, guesses, hasWon);
+      apiSaveGame(GAME_MODE, guesses, hasWon, myRank);
     }
-  }, [guesses, hasWon, loading]);
+  }, [guesses, hasWon, loading, myRank]);
 
   // Récupère le nombre de gagnants au chargement et en temps réel
   useEffect(() => {
@@ -127,6 +133,35 @@ const ClassicPage: React.FC = () => {
     const interval = setInterval(fetchCounts, 2000);
     return () => { stop = true; clearInterval(interval); };
   }, []);
+
+  // Récupère la réponse d'hier au chargement
+  useEffect(() => {
+    (async () => {
+      const today = await fetchTodayFromBackend();
+      const todayDate = new Date(today);
+      const yesterday = new Date(todayDate);
+      yesterday.setDate(todayDate.getDate() - 1);
+      const yDate = yesterday.toISOString().slice(0, 10);
+      const yAnswerId = getAnswerForDate(GAME_MODE, yDate);
+      if (yAnswerId) {
+        const { gameId: yGameId } = await fetchAnswerIdAndGameId(GAME_MODE, yDate);
+        setYesterdayGameId(yGameId);
+        const yAnswerObj = getPersonById(yAnswerId);
+        setYesterdayAnswer(yAnswerObj || null);
+      }
+    })();
+  }, []);
+
+  // Enregistre le rang du joueur à la victoire
+  useEffect(() => {
+    if (hasWon && myRank === null && gameId) {
+      (async () => {
+        const count = await fetchWinnersCount(GAME_MODE);
+        setMyRank(count); // On ne fait plus +1
+        apiSaveGame(GAME_MODE, guesses, true, count); // Sauvegarde aussi le rang
+      })();
+    }
+  }, [hasWon, myRank, gameId]);
 
   const handleGuess = useCallback((person: VJLPerson) => {
     if (guesses.includes(person.id)) return;
@@ -309,22 +344,26 @@ const ClassicPage: React.FC = () => {
               nextModeImg={'next-citation.png'}
               countdown={countdown}
               timezone="Europe/Paris (UTC+2)"
+              rank={myRank}
             />
             <div className="victory-history-box">
-                <div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word', fontSize: '1.08rem', marginBottom: 8 }}>{getShareText()}</div>
-                <button className="victory-history-copy-btn" onClick={handleCopy} type="button">
-                    <span style={{display:'flex',alignItems:'center',gap:6}}>
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{verticalAlign:'middle'}} xmlns="http://www.w3.org/2000/svg">
-                        <rect x="5" y="3" width="12" height="14" rx="3" fill={historyCopied ? '#ffd700' : '#e6c559'} stroke="#3a2e14" strokeWidth="1.5"/>
-                        <rect x="2" y="6" width="12" height="11" rx="2.5" fill="none" stroke="#bfa23a" strokeWidth="1.2"/>
-                    </svg>
-                    {historyCopied ? 'Copié !' : 'Copier'}
-                    </span>
-                </button>
+              <div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word', fontSize: '1.08rem', marginBottom: 8 }}>{getShareText()}</div>
+              <button className="victory-history-copy-btn" onClick={handleCopy} type="button">
+                <span style={{display:'flex',alignItems:'center',gap:6}}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{verticalAlign:'middle'}} xmlns="http://www.w3.org/2000/svg">
+                    <rect x="5" y="3" width="12" height="14" rx="3" fill={historyCopied ? '#ffd700' : '#e6c559'} stroke="#3a2e14" strokeWidth="1.5"/>
+                    <rect x="2" y="6" width="12" height="11" rx="2.5" fill="none" stroke="#bfa23a" strokeWidth="1.2"/>
+                  </svg>
+                  {historyCopied ? 'Copié !' : 'Copier'}
+                </span>
+              </button>
             </div>
           </div>
           <AllModesShareBox />
         </>
+      )}
+      {yesterdayAnswer && (
+        <YesterdayAnswerBox yesterdayAnswer={yesterdayAnswer} gameId={yesterdayGameId ?? undefined} />
       )}
       <div style={{ marginTop: 36 }} />
     </div>

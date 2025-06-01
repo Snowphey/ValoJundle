@@ -231,6 +231,26 @@ app.post('/api/game/:userId/:mode', (req, res) => {
     state.hasWon = hasWon;
     state.gameId = gameId;
   }
+  // Ajout : si victoire, on enregistre le rang (combientième)
+  if (hasWon && !state.rank) {
+    // On compte le nombre de joueurs ayant déjà gagné aujourd'hui sur ce mode
+    let rank = 1;
+    for (const otherUserId in games) {
+      if (otherUserId === userId) continue;
+      const other = games[otherUserId][mode];
+      if (
+        other &&
+        other.gameId === gameId &&
+        other.hasWon &&
+        Array.isArray(other.guesses) &&
+        other.guesses.length > 0 &&
+        other.guesses[other.guesses.length - 1] === state.guesses[state.guesses.length - 1]
+      ) {
+        rank++;
+      }
+    }
+    state.rank = rank;
+  }
   games[userId][mode] = state;
   writeGames(games);
   res.json({ ok: true });
@@ -309,7 +329,11 @@ app.get('/api/citation-of-the-day/:discordUserId', (req, res) => {
     if (!allMessages.length) return res.json(null);
     const idx = refreshedAnswer.modes['citation'].citationIdx;
     if (idx >= allMessages.length) return res.json(null);
-    return res.json(allMessages[idx]);
+    // Trouver la citation d'origine contenant ce message
+    const citation = userCitations.find(c => c.messages.some((m, i) => m.content && m.content.trim().length > 0 && allMessages[idx] === m));
+    if (!citation) return res.json(null);
+    // Retourner tous les contents de cette citation, séparés par \n
+    return res.json(citation.messages.map(m => m.content).join('\n'));
   }
   // Sinon, on lit la citation du jour pour ce userId
   const citationsPath = path.join(__dirname, 'discord', 'citations.json');
@@ -325,7 +349,11 @@ app.get('/api/citation-of-the-day/:discordUserId', (req, res) => {
   if (!allMessages.length) return res.json(null);
   const idx = answers[answerId].modes['citation'].citationIdx;
   if (idx >= allMessages.length) return res.json(null);
-  return res.json(allMessages[idx]);
+  // Trouver la citation d'origine contenant ce message
+  const citation = userCitations.find(c => c.messages.some((m, i) => m.content && m.content.trim().length > 0 && allMessages[idx] === m));
+  if (!citation) return res.json(null);
+  // Retourner tous les contents de cette citation, séparés par \n
+  return res.json(citation.messages.map(m => m.content).join('\n'));
 });
 
 // GET /api/image-of-the-day/:discordUserId

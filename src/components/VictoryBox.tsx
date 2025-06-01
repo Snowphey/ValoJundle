@@ -12,6 +12,7 @@ interface VictoryBoxProps {
   nextModeImg: string | null; // chemin de l'image du mode suivant, peut être null
   countdown: string;
   timezone: string;
+  rank?: number | null; // Ajout du rang
 }
 
 const VictoryBox: React.FC<VictoryBoxProps> = ({
@@ -22,6 +23,7 @@ const VictoryBox: React.FC<VictoryBoxProps> = ({
   nextModeImg,
   countdown,
   timezone,
+  rank,
 }) => {
   const navigate = useNavigate();
 
@@ -35,6 +37,19 @@ const VictoryBox: React.FC<VictoryBoxProps> = ({
           <div className="victory-member-name">{memberName}</div>
         </div>
       </div>
+      {/* Affiche le rang sous le membre et au-dessus du nombre d'essais */}
+      {typeof rank === 'number' && (
+        <div style={{
+          textAlign: 'center',
+          margin: '12px 0 8px 0',
+          fontWeight: 600,
+          fontSize: '1rem',
+          color: '#fff',
+          letterSpacing: 0.5,
+        }}>
+          Tu es le n°<span style={{color:'#09cae6'}}>{rank}</span> à avoir trouvé le membre du jour.
+        </div>
+      )}
       <div className="victory-attempts">Nombre d'essais : <span style={{color: "#09cae6"}}>{attempts}</span></div>
       <div className="victory-next">Le prochain membre est dans</div>
       <div className="victory-countdown">

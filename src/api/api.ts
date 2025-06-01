@@ -22,12 +22,12 @@ export async function loadGame(mode: string) {
   return await res.json();
 }
 
-export async function saveGame(mode: string, guesses: number[], hasWon: boolean) {
+export async function saveGame(mode: string, guesses: number[], hasWon: boolean, rank?: number | null) {
   const userId = getOrCreateUserId();
   await fetch(`${API_URL}/game/${userId}/${mode}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ guesses, hasWon })
+    body: JSON.stringify({ guesses, hasWon, rank })
   });
 }
 

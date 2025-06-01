@@ -9,6 +9,8 @@ import CitationGuessHistory from './components/CitationGuessHistory';
 import { buildShareText } from './utils/buildShareText';
 import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswerIdAndGameId, fetchWinnersCount, getPersonById, fetchTodayFromBackend, fetchCitationOfTheDay, fetchGuessCounts, fetchCronReadyFromBackend } from './api/api';
 import AllModesShareBox from './components/AllModesShareBox';
+import { getAnswerForDate } from './utils/getAnswerForDate';
+import YesterdayAnswerBox from './components/YesterdayAnswerBox';
 
 const GAME_MODE = 'citation';
 
@@ -61,6 +63,9 @@ const CitationPage: React.FC = () => {
   const [animatingIndex, setAnimatingIndex] = useState<number | null>(null);
   const [lastWrongId, setLastWrongId] = useState<number | undefined>(undefined);
   const [lastCorrectId, setLastCorrectId] = useState<number | undefined>(undefined);
+  const [myRank, setMyRank] = useState<number | null>(null);
+  const [yesterdayAnswer, setYesterdayAnswer] = useState<VJLPerson | null>(null);
+  const [yesterdayGameId, setYesterdayGameId] = useState<number | null>(null);
 
   // Chargement initial depuis le backend
   useEffect(() => {
@@ -83,6 +88,7 @@ const CitationPage: React.FC = () => {
         const state = await apiLoadGame(GAME_MODE);
         setGuesses(state.guesses || []);
         setHasWon(state.hasWon || false);
+        if (typeof state.rank === 'number') setMyRank(state.rank);
         // Récupère les guessCounts
         const counts = await fetchGuessCounts(GAME_MODE);
         setGuessCounts(counts);
@@ -109,9 +115,9 @@ const CitationPage: React.FC = () => {
   // Sauvegarde la partie à chaque changement
   useEffect(() => {
     if (!loading) {
-      apiSaveGame(GAME_MODE, guesses, hasWon);
+      apiSaveGame(GAME_MODE, guesses, hasWon, myRank);
     }
-  }, [guesses, hasWon, loading]);
+  }, [guesses, hasWon, loading, myRank]);
 
   // Récupère le nombre de gagnants au chargement et en temps réel
   useEffect(() => {
@@ -260,6 +266,35 @@ const CitationPage: React.FC = () => {
     }
   }, [scrollToResult]);
 
+  // Récupère la réponse d'hier au chargement
+  useEffect(() => {
+    (async () => {
+      const today = await fetchTodayFromBackend();
+      const todayDate = new Date(today);
+      const yesterday = new Date(todayDate);
+      yesterday.setDate(todayDate.getDate() - 1);
+      const yDate = yesterday.toISOString().slice(0, 10);
+      const yAnswerId = getAnswerForDate(GAME_MODE, yDate);
+      if (yAnswerId) {
+        const { gameId: yGameId } = await fetchAnswerIdAndGameId(GAME_MODE, yDate);
+        setYesterdayGameId(yGameId);
+        const yAnswerObj = getPersonById(yAnswerId);
+        setYesterdayAnswer(yAnswerObj || null);
+      }
+    })();
+  }, []);
+
+  // Enregistre le rang du joueur à la victoire
+  useEffect(() => {
+    if (hasWon && myRank === null && gameId) {
+      (async () => {
+        const count = await fetchWinnersCount(GAME_MODE);
+        setMyRank(count + 1); // +1 car on vient de gagner
+        apiSaveGame(GAME_MODE, guesses, true, count + 1); // Sauvegarde aussi le rang
+      })();
+    }
+  }, [hasWon, myRank, gameId]);
+
   if (loading || !answer || !mainMessage) return <div>Chargement...</div>;
 
   return (
@@ -280,7 +315,7 @@ const CitationPage: React.FC = () => {
       }}>
         <div style={{ fontSize: '1.25rem', marginBottom: 8, fontWeight: 700 }}>Qui a dit :</div>
         <div style={{ fontSize: '2rem', fontStyle: 'italic', margin: '18px 0', lineHeight: 1.4, whiteSpace: 'pre-line' }}>
-          “ {mainMessage.content} ”
+          “ {mainMessage} ”
         </div>
       </div>
       {/* Input de guess */}
@@ -342,6 +377,7 @@ const CitationPage: React.FC = () => {
             nextModeImg={'next-image.png'}
             countdown={countdown}
             timezone="Europe/Paris (UTC+2)"
+            rank={myRank}
           />
           <div className="victory-history-box">
             <div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word', fontSize: '1.08rem', marginBottom: 8 }}>{getShareText()}</div>
@@ -357,6 +393,10 @@ const CitationPage: React.FC = () => {
           </div>
           <AllModesShareBox />
         </div>
+      )}
+      {/* Réponse d'hier tout en bas */}
+      {yesterdayAnswer && (
+        <YesterdayAnswerBox yesterdayAnswer={yesterdayAnswer} gameId={yesterdayGameId ?? undefined} />
       )}
     </div>
   );
