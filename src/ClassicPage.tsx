@@ -62,7 +62,6 @@ const ClassicPage: React.FC = () => {
   const [answer, setAnswer] = useState<VJLPerson | null>(null);
   const [guesses, setGuesses] = useState<number[]>([]); // Stocke les ids numériques
   const [animatingIndex, setAnimatingIndex] = useState<number | null>(null);
-  const [showResult, setShowResult] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [scrollToResult, setScrollToResult] = useState(false);
   const [historyCopied, setHistoryCopied] = useState(false);
@@ -152,22 +151,10 @@ const ClassicPage: React.FC = () => {
     })();
   }, []);
 
-  // Enregistre le rang du joueur à la victoire
-  useEffect(() => {
-    if (hasWon && myRank === null && gameId) {
-      (async () => {
-        const count = await fetchWinnersCount(GAME_MODE);
-        setMyRank(count); // On ne fait plus +1
-        apiSaveGame(GAME_MODE, guesses, true, count); // Sauvegarde aussi le rang
-      })();
-    }
-  }, [hasWon, myRank, gameId]);
-
   const handleGuess = useCallback((person: VJLPerson) => {
     if (guesses.includes(person.id)) return;
     setGuesses(prev => [...prev, person.id]);
     setAnimatingIndex(0);
-    setShowResult(false);
     setShowConfetti(false);
     setScrollToResult(false);
   }, [guesses]);
@@ -186,14 +173,15 @@ const ClassicPage: React.FC = () => {
         if (guesses.length > 0 && lastGuess && lastGuess.id === answer?.id) {
           setShowConfetti(true);
           setTimeout(async () => {
-            setShowResult(true);
             setHasWon(true);
             await apiSaveGame(GAME_MODE, [...guesses], true);
+            // Ajout : récupère et set le rang immédiatement après la victoire
+            const count = await fetchWinnersCount(GAME_MODE);
+            setMyRank(count);
+            await apiSaveGame(GAME_MODE, [...guesses], true, count);
             refreshWonModes();
             setTimeout(() => setScrollToResult(true), 600);
           }, 1200);
-        } else {
-          setShowResult(true);
         }
       }, 600);
       return () => clearTimeout(timeout);
@@ -329,7 +317,6 @@ const ClassicPage: React.FC = () => {
         answer={answer}
         attributes={ATTRIBUTES}
         animatingIndex={animatingIndex}
-        showResult={showResult}
         guessCounts={guessCounts}
       />
       <ColorIndicator />

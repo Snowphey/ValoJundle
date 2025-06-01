@@ -15,7 +15,6 @@ interface ClassicGuessHistoryProps {
   answer: VJLPerson;
   attributes: Attribute[];
   animatingIndex: number | null;
-  showResult: boolean;
   guessCounts: Record<number, number>;
 }
 

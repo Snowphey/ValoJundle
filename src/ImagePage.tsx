@@ -164,6 +164,10 @@ const ImagePage: React.FC = () => {
           setTimeout(async () => {
             setHasWon(true);
             await apiSaveGame(GAME_MODE, [...guesses], true);
+            // Ajout : récupère et set le rang immédiatement après la victoire
+            const count = await fetchWinnersCount(GAME_MODE);
+            setMyRank(count);
+            await apiSaveGame(GAME_MODE, [...guesses], true, count);
             refreshWonModes();
             setTimeout(() => setScrollToResult(true), 600);
           }, 1200);
@@ -289,8 +293,8 @@ const ImagePage: React.FC = () => {
     if (hasWon && myRank === null && gameId) {
       (async () => {
         const count = await fetchWinnersCount(GAME_MODE);
-        setMyRank(count + 1); // +1 car on vient de gagner
-        apiSaveGame(GAME_MODE, guesses, true, count + 1); // Sauvegarde aussi le rang
+        setMyRank(count);
+        apiSaveGame(GAME_MODE, guesses, true, count); // Sauvegarde aussi le rang
       })();
     }
   }, [hasWon, myRank, gameId]);
