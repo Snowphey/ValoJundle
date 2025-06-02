@@ -116,6 +116,7 @@ Le site sera accessible sur http://localhost:5173
 - [Vite](https://vitejs.dev/)
 - [Express](https://expressjs.com/)
 - [canvas-confetti](https://www.npmjs.com/package/canvas-confetti)
+- [discord.js](https://discord.js.org/) (Pour le mode Citation et Image)
 
 ## Crédits
 Sophie Longy
