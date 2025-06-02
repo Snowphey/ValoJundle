@@ -31,7 +31,7 @@ export async function saveGame(mode: string, guesses: number[], hasWon: boolean,
   });
 }
 
-export async function fetchAnswer(mode: string, date: string): Promise<{ id: number, gameId: number }> {
+export async function fetchAnswer(mode: string, date: string): Promise<{ personId: number, answerId: number }> {
   const res = await fetch(`${API_URL}/answer/${mode}/${date}`);
   if (!res.ok) throw new Error('Erreur chargement réponse du jour');
   const data = await res.json();
@@ -39,11 +39,11 @@ export async function fetchAnswer(mode: string, date: string): Promise<{ id: num
 }
 
 // Récupère la réponse d'un jour passé SANS création automatique (pour l'affichage de la réponse d'hier)
-export async function fetchAnswerIfExists(mode: string, date: string): Promise<{ id: number, gameId: number } | null> {
+export async function fetchAnswerIfExists(mode: string, date: string): Promise<{ personId: number, answerId: number } | null> {
   const res = await fetch(`${API_URL}/answer-if-exists/${mode}/${date}`);
   if (!res.ok) throw new Error('Erreur chargement réponse du jour (if-exists)');
   const data = await res.json();
-  if (!data || typeof data.id === 'undefined') return null;
+  if (!data || typeof data.personId === 'undefined') return null;
   return data;
 }
 

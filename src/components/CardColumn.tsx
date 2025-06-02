@@ -13,9 +13,13 @@ interface CardColumnProps {
   showArrow?: boolean;
   isPfp?: boolean; // Ajouté : indique si c'est la colonne pfp
   pfpName?: string; // Ajouté : prénom pour tooltip
+  /**
+   * Optional callback fired when the card animation ends (for last guess line confetti logic)
+   */
+  onAnimationEnd?: () => void;
 }
 
-const CardColumn: React.FC<CardColumnProps> = ({ label, value, status = 'incorrect', delay, showLabel, showArrow, isPfp, pfpName }) => {
+const CardColumn: React.FC<CardColumnProps> = ({ label, value, status = 'incorrect', delay, showLabel, showArrow, isPfp, pfpName, onAnimationEnd }) => {
   const [hovered, setHovered] = React.useState(false);
   const shouldShowArrow = showArrow && (status === 'higher' || status === 'lower');
   // Pas d'animation ni d'opacité pour pfp
@@ -37,6 +41,7 @@ const CardColumn: React.FC<CardColumnProps> = ({ label, value, status = 'incorre
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        onAnimationEnd={isPfp ? undefined : onAnimationEnd}
       >
         <div className="card-value" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
           {shouldShowArrow && (

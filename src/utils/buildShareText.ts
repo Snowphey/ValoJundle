@@ -1,5 +1,6 @@
 import type { VJLPerson } from '../types/VJLPerson';
 import type { CardStatus } from '../components/CardColumn';
+import modes from '../data/modes.json';
 
 export interface Attribute {
   key: keyof VJLPerson;
@@ -12,7 +13,7 @@ export function buildShareText(
   guesses: VJLPerson[],
   answer: VJLPerson,
   attributes: Attribute[],
-  mode: string = 'classique',
+  mode: string,
   gameNumber: string = '?'
 ): string {
   if (!guesses.length) return '';
@@ -26,7 +27,11 @@ export function buildShareText(
     return `J'ai trouvé le membre #ValoJundle #${gameNumber} avec une image en ${tries} coup${tries > 1 ? 's' : ''}  ⚔️\n\n${URL}`;
   }
 
-  let text = `J'ai trouvé le membre #ValoJundle #${gameNumber} en mode ${mode} en ${tries} coup${tries > 1 ? "s" : ""}  ⚔️\n`;
+  // Récupère le label du mode depuis modes.json
+  const modeLabel = (modes.find(m => m.key === mode)?.label || mode);
+  console.log(modes);
+  console.log(modeLabel);
+  let text = `J'ai trouvé le membre #ValoJundle #${gameNumber} en mode ${modeLabel} en ${tries} coup${tries > 1 ? "s" : ""}  ⚔️\n`;
   const colorMap: Record<string, string> = {
     correct: '🟩',  
     partial: '🟧',

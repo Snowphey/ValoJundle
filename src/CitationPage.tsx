@@ -48,23 +48,21 @@ const CitationPage: React.FC = () => {
   const [answer, setAnswer] = useState<VJLPerson | null>(null);
   const [guesses, setGuesses] = useState<number[]>([]);
   const [hasWon, setHasWon] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
   const [historyCopied, setHistoryCopied] = useState(false);
   const [winnersCount, setWinnersCount] = useState<number>(0);
-  const [gameId, setGameId] = useState<number | null>(null);
+  const [answerId, setAnswerId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState('00:00:00');
   const resultRef = React.useRef<HTMLDivElement>(null);
-  const [scrollToResult, setScrollToResult] = useState(false);
   const { refreshWonModes } = useWonModes();
   const [mainMessage, setMainMessage] = useState<any | null>(null);
   const [guessCounts, setGuessCounts] = useState<Record<number, number>>({});
-  const [animatingIndex, setAnimatingIndex] = useState<number | null>(null);
   const [lastWrongId, setLastWrongId] = useState<number | undefined>(undefined);
   const [lastCorrectId, setLastCorrectId] = useState<number | undefined>(undefined);
   const [myRank, setMyRank] = useState<number | null>(null);
   const [yesterdayAnswer, setYesterdayAnswer] = useState<VJLPerson | null>(null);
-  const [yesterdayGameId, setYesterdayGameId] = useState<number | null>(null);
+  const [yesterdayAnswerId, setYesterdayAnswerId] = useState<number | null>(null);
+  const [showVictoryBox, setShowVictoryBox] = useState(false);
 
   // Chargement initial depuis le backend
   useEffect(() => {
@@ -73,8 +71,8 @@ const CitationPage: React.FC = () => {
       try {
         const today = await fetchTodayFromBackend();
         const answer = await fetchAnswer(GAME_MODE, today);
-        setGameId(answer.gameId);
-        const answerObj = getPersonById(answer.id);
+        setAnswerId(answer.answerId);
+        const answerObj = getPersonById(answer.personId);
         setAnswer(answerObj || null);
         // Citation Discord du jour (déterministe)
         if (answerObj?.discordUserId) {
@@ -88,6 +86,8 @@ const CitationPage: React.FC = () => {
         setGuesses(state.guesses || []);
         setHasWon(state.hasWon || false);
         if (typeof state.rank === 'number') setMyRank(state.rank);
+        // Ajout : si déjà gagné, afficher la VictoryBox
+        if (state.hasWon) setShowVictoryBox(true);
         // Récupère les guessCounts
         const counts = await fetchGuessCounts(GAME_MODE);
         setGuessCounts(counts);
@@ -111,13 +111,6 @@ const CitationPage: React.FC = () => {
     return () => { stop = true; clearInterval(interval); };
   }, []);
 
-  // Sauvegarde la partie à chaque changement
-  useEffect(() => {
-    if (!loading) {
-      apiSaveGame(GAME_MODE, guesses, hasWon, myRank);
-    }
-  }, [guesses, hasWon, loading, myRank]);
-
   // Récupère le nombre de gagnants au chargement et en temps réel
   useEffect(() => {
     let stop = false;
@@ -133,48 +126,48 @@ const CitationPage: React.FC = () => {
   }, []);
 
   // Remplace handleGuess par la version ClassicPage
-  const handleGuess = useCallback((person: VJLPerson) => {
-    if (guesses.includes(person.id)) return;
-    setGuesses(prev => [...prev, person.id]);
-    setAnimatingIndex(0);
-    setShowConfetti(false);
-    setScrollToResult(false);
-    if (answer && person.id === answer.id) {
-      setLastCorrectId(person.id);
-    } else {
-      setLastWrongId(person.id);
-    }
-  }, [guesses, answer]);
+  const handleGuess = useCallback(async (person: VJLPerson) => {
+    setGuesses(prevGuesses => {
+      if (prevGuesses.includes(person.id)) return prevGuesses;
+      const newGuesses = [...prevGuesses, person.id];
 
-  // Pour récupérer le dernier guess en tant qu'objet VJLPerson
-  const lastGuess = guesses.length > 0 ? getPersonById(guesses[guesses.length - 1]) : undefined;
+      // Met à jour guessCounts en asynchrone
+      fetchGuessCounts(GAME_MODE).then(setGuessCounts);
 
-  // Animation et gestion victoire comme ClassicPage
-  useEffect(() => {
-    if (animatingIndex === null) return;
-    if (animatingIndex < 1) { // Citation n'a qu'une colonne, donc 1 étape
-      const timeout = setTimeout(() => setAnimatingIndex(animatingIndex + 1), 420);
-      return () => clearTimeout(timeout);
-    } else {
-      const timeout = setTimeout(() => {
-        setAnimatingIndex(null);
-        if (guesses.length > 0 && lastGuess && lastGuess.id === answer?.id) {
-          setShowConfetti(true);
-          setTimeout(async () => {
-            setHasWon(true);
-            await apiSaveGame(GAME_MODE, [...guesses], true);
-            // Ajout : récupère et set le rang immédiatement après la victoire
-            const count = await fetchWinnersCount(GAME_MODE);
-            setMyRank(count);
-            await apiSaveGame(GAME_MODE, [...guesses], true, count);
-            refreshWonModes();
-            setTimeout(() => setScrollToResult(true), 600);
-          }, 1200);
-        }
-      }, 600);
-      return () => clearTimeout(timeout);
-    }
-  }, [animatingIndex, guesses, answer, lastGuess]);
+      if (answer && person.id === answer.id) {
+        setLastCorrectId(person.id);
+        setHasWon(true);
+        setShowVictoryBox(false);
+        setTimeout(async () => {
+          // Enregistre la victoire et récupère le rang
+          const count = await fetchWinnersCount(GAME_MODE);
+          setMyRank(count + 1);
+          await apiSaveGame(GAME_MODE, newGuesses, true, count + 1);
+          refreshWonModes();
+
+          // Confettis
+          import('./confetti').then(({ default: confetti }) => {
+            window.requestAnimationFrame(() => {
+              confetti({
+                particleCount: 180,
+                spread: 90,
+                origin: { y: 0.5 },
+                zIndex: 9999,
+              });
+            });
+            setTimeout(() => {
+              setShowVictoryBox(true);
+            }, 1200);
+          });
+        }, 600);
+      } else {
+        setLastWrongId(person.id);
+        apiSaveGame(GAME_MODE, newGuesses, false);
+      }
+
+      return newGuesses;
+    });
+  }, [answer, refreshWonModes]);
 
   // Chronomètre (reset à minuit Europe/Paris)
   useEffect(() => {
@@ -243,29 +236,11 @@ const CitationPage: React.FC = () => {
   // Génère le texte à partager (simple pour l'instant)
   function getShareText() {
     if (!answer) return '';
-    return buildShareText(guessObjects, answer, [], 'citation', gameId?.toString() ?? '?');
+    return buildShareText(guessObjects, answer, [], GAME_MODE, answerId?.toString() ?? '?');
   }
 
   // Pour l'affichage des guesses
   const guessObjects = guesses.map(id => getPersonById(id)).filter(Boolean) as VJLPerson[];
-  
-  // Confetti (optionnel)
-  useEffect(() => {
-    if (showConfetti) {
-      import('./confetti').then(({ default: confetti }) => {
-        window.requestAnimationFrame(() => {
-          confetti({ particleCount: 180, spread: 90, origin: { y: 0.5 }, zIndex: 9999 });
-        });
-      });
-    }
-  }, [showConfetti]);
-
-  useEffect(() => {
-    if (scrollToResult && resultRef.current) {
-      resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setScrollToResult(false);
-    }
-  }, [scrollToResult]);
 
   // Récupère la réponse d'hier au chargement
   useEffect(() => {
@@ -276,27 +251,23 @@ const CitationPage: React.FC = () => {
       yesterday.setDate(todayDate.getDate() - 1);
       const yDate = yesterday.toISOString().slice(0, 10);
       const yAnswerData = await fetchAnswerIfExists(GAME_MODE, yDate);
-      if (yAnswerData && typeof yAnswerData.id !== 'undefined') {
-        setYesterdayGameId(yAnswerData.gameId);
-        const yAnswerObj = getPersonById(yAnswerData.id);
+      if (yAnswerData && typeof yAnswerData.personId !== 'undefined') {
+        setYesterdayAnswerId(yAnswerData.answerId);
+        const yAnswerObj = getPersonById(yAnswerData.personId);
         setYesterdayAnswer(yAnswerObj || null);
       } else {
-        setYesterdayGameId(null);
+        setYesterdayAnswerId(null);
         setYesterdayAnswer(null);
       }
     })();
   }, []);
 
-  // Enregistre le rang du joueur à la victoire
+  // Scroll vers la victoire
   useEffect(() => {
-    if (hasWon && myRank === null && gameId) {
-      (async () => {
-        const count = await fetchWinnersCount(GAME_MODE);
-        setMyRank(count);
-        apiSaveGame(GAME_MODE, guesses, true, count); // Sauvegarde aussi le rang
-      })();
+    if (showVictoryBox && resultRef.current) {
+      resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [hasWon, myRank, gameId]);
+  }, [showVictoryBox]);
 
   if (loading || !answer || !mainMessage) return <div>Chargement...</div>;
 
@@ -323,7 +294,7 @@ const CitationPage: React.FC = () => {
       </div>
       {/* Input de guess */}
       {!hasWon && (
-        <VJLGuessInput onGuess={handleGuess} />
+        <VJLGuessInput mode={GAME_MODE} onGuess={handleGuess} />
       )}
       {/* Compteur de gagnants (mocké) */}
       <div style={{ textAlign: 'center', marginTop: 8, marginBottom: 18 }}>
@@ -344,7 +315,7 @@ const CitationPage: React.FC = () => {
       />
       <div style={{ marginTop: 36 }} />
       {/* Victoire */}
-      {hasWon && (
+      {hasWon && showVictoryBox && (
         <div ref={resultRef} style={{ margin: '32px 0 24px 0' }}>
           <a
             href={mainMessage.url}
@@ -398,8 +369,8 @@ const CitationPage: React.FC = () => {
         </div>
       )}
       {/* Réponse d'hier tout en bas */}
-      {yesterdayAnswer && yesterdayGameId && (
-        <YesterdayAnswerBox yesterdayAnswer={yesterdayAnswer} gameId={yesterdayGameId} />
+      {yesterdayAnswer && yesterdayAnswerId && (
+        <YesterdayAnswerBox yesterdayAnswer={yesterdayAnswer} answerId={yesterdayAnswerId} />
       )}
     </div>
   );

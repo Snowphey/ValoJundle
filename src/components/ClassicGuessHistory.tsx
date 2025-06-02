@@ -14,8 +14,11 @@ interface ClassicGuessHistoryProps {
   guesses: VJLPerson[];
   answer: VJLPerson;
   attributes: Attribute[];
-  animatingIndex: number | null;
   guessCounts: Record<number, number>;
+  /**
+   * Optional callback fired when the last guess line's animation ends (for win confetti logic)
+   */
+  onLastLineAnimationEnd?: () => void;
 }
 
 function getStatus(guess: VJLPerson, answer: VJLPerson, key: keyof VJLPerson): CardStatus {
@@ -43,12 +46,15 @@ function getStatus(guess: VJLPerson, answer: VJLPerson, key: keyof VJLPerson): C
   return 'incorrect';
 }
 
-const ClassicGuessHistory: React.FC<ClassicGuessHistoryProps> = ({ guesses, answer, attributes, guessCounts }) => {
+const ClassicGuessHistory: React.FC<ClassicGuessHistoryProps> = ({ guesses, answer, attributes, guessCounts, onLastLineAnimationEnd }) => {
   // On définit dynamiquement le nombre de colonnes pour le CSS (inclut pfp)
   React.useEffect(() => {
     const root = document.documentElement;
     root.style.setProperty('--vjl-nb-cols', attributes.length.toString());
   }, [attributes.length]);
+
+  // Track if we've already called the callback to avoid multiple calls
+  const lastLineCallbackCalled = React.useRef(false);
 
   if (guesses.length === 0) return null;
 
@@ -106,6 +112,7 @@ const ClassicGuessHistory: React.FC<ClassicGuessHistoryProps> = ({ guesses, answ
         {guesses.slice().reverse().map((guess, idx) => {
           // Calculer l'index réel dans guesses pour l'animation
           const guessIdx = guesses.length - 1 - idx;
+          const isLastGuess = guessIdx === guesses.length - 1;
           return (
             <div
               key={guessIdx}
@@ -120,6 +127,14 @@ const ClassicGuessHistory: React.FC<ClassicGuessHistoryProps> = ({ guesses, answ
             >
               {attributes.map((attr, i) => {
                 const delay = attr.key === 'pfp' ? 0 : (i - 1) * 500;
+                // For the last attribute of the last guess, attach animation end handler
+                const isLastAttr = i === attributes.length - 1;
+                const handleAnimationEnd = () => {
+                  if (isLastGuess && isLastAttr && onLastLineAnimationEnd && !lastLineCallbackCalled.current) {
+                    lastLineCallbackCalled.current = true;
+                    onLastLineAnimationEnd();
+                  }
+                };
                 return (
                   <div key={attr.key + '-' + guessIdx} style={{ flex: '1 1 0', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
                     {/* Ajout du compteur en haut à droite de la pfp */}
@@ -157,6 +172,7 @@ const ClassicGuessHistory: React.FC<ClassicGuessHistoryProps> = ({ guesses, answ
                       showArrow={attr.key === 'height' || attr.key === 'birthDate'}
                       isPfp={attr.key === 'pfp'}
                       pfpName={attr.key === 'pfp' ? guess.prenom : undefined}
+                      {...(isLastGuess && isLastAttr && onLastLineAnimationEnd ? { onAnimationEnd: handleAnimationEnd } : {})}
                     />
                   </div>
                 );

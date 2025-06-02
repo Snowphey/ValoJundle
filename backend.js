@@ -32,7 +32,7 @@ app.get('/api/cron-ready', (req, res) => {
   res.json({ ready: cronReady });
 });
 
-// Helper: get today's gameId (Europe/Paris)
+// Helper: get today's answerDate (Europe/Paris)
 function getParisDateObj(date = new Date()) {
   // Retourne un objet Date à l'heure Europe/Paris correspondant à la date passée (ou maintenant)
   const parts = new Intl.DateTimeFormat('fr-FR', {
@@ -58,7 +58,7 @@ function getPersonById(id) {
   return vjlData.find(p => p.id === id);
 }
 
-function getGameIdForToday() {
+function getAnswerDateForToday() {
   const nowParis = getParisDateObj();
   const year = nowParis.getFullYear();
   const month = (nowParis.getMonth() + 1).toString().padStart(2, '0');
@@ -115,16 +115,16 @@ function getAnswerForDay(mode, date, vjlData, createIfMissing = true) {
     const dateParis = getParisDateObj(new Date(date + 'T00:00:00'));
     const prevParis = new Date(dateParis);
     prevParis.setDate(prevParis.getDate() - 1);
-    const prevGameId = `${prevParis.getFullYear()}-${(prevParis.getMonth()+1).toString().padStart(2,'0')}-${prevParis.getDate().toString().padStart(2,'0')}`;
-    let prevAnswer = null;
+    const prevAnswerDate = `${prevParis.getFullYear()}-${(prevParis.getMonth()+1).toString().padStart(2,'0')}-${prevParis.getDate().toString().padStart(2,'0')}`;
+    let prevPersonId = null;
     for (const prevId in answers) {
-      if (answers[prevId] && answers[prevId].date === prevGameId && answers[prevId].modes && answers[prevId].modes[mode]) {
-        prevAnswer = answers[prevId].modes[mode].answer;
+      if (answers[prevId] && answers[prevId].date === prevAnswerDate && answers[prevId].modes && answers[prevId].modes[mode]) {
+        prevPersonId = answers[prevId].modes[mode].personId;
         break;
       }
     }
     // 2. Exclure les réponses déjà attribuées aux autres modes du jour
-    const usedToday = Object.values(answers[id].modes).map(m => m.answer);
+    const usedToday = Object.values(answers[id].modes).map(m => m.personId);
     // 3. Générer une réponse qui n'est ni la réponse du mode la veille ni déjà attribuée aujourd'hui
     let pool = vjlData.map(p => p.id);
     let candidate = null;
@@ -134,19 +134,18 @@ function getAnswerForDay(mode, date, vjlData, createIfMissing = true) {
       tries++;
       // Sécurité anti-boucle infinie (au cas où tout est utilisé, on prend n'importe qui)
       if (tries > 100) break;
-    } while ((candidate === prevAnswer) || usedToday.includes(candidate));
-    answers[id].modes[mode] = { answer: candidate };
+    } while ((candidate === prevPersonId) || usedToday.includes(candidate));
+    answers[id].modes[mode] = { personId: candidate };
     writeAnswers(answers);
   }
-  return { id: answers[id].modes[mode].answer, gameId: Number(id) };
+  return { personId: answers[id].modes[mode].personId, answerId: Number(id) };
 }
 
 // GET /api/answer/:mode/:date
 app.get('/api/answer/:mode/:date', (req, res) => {
   const { mode, date } = req.params;
-  // getAnswerForDay retourne maintenant { id, gameId }
-  const { id, gameId } = getAnswerForDay(mode, date, vjlData);
-  res.json({ id, gameId });
+  const { personId, answerId } = getAnswerForDay(mode, date, vjlData);
+  res.json({ personId, answerId });
 });
 
 // Nouvelle route pour obtenir la réponse SANS création automatique
@@ -161,23 +160,23 @@ app.get('/api/answer-if-exists/:mode/:date', (req, res) => {
 app.get('/api/game-count/:mode', (req, res) => {
   const { mode } = req.params;
   const games = readGames();
-  const today = getGameIdForToday();
+  const today = getAnswerDateForToday();
   // Récupère la bonne réponse du jour pour ce mode
   const answers = readAnswers();
-  let todayAnswerId = null;
+  let todayPersonId = null;
   for (const id in answers) {
     if (answers[id] && answers[id].date === today && answers[id].modes && answers[id].modes[mode]) {
-      todayAnswerId = answers[id].modes[mode].answer;
+      todayPersonId = answers[id].modes[mode].personId;
       break;
     }
   }
   let count = 0;
-  if (todayAnswerId !== null) {
+  if (todayPersonId !== null) {
     // On récupère le bon id numérique de answers pour aujourd'hui
-    let todayNumericId = null;
+    let todayAnswerId = null;
     for (const ansId in answers) {
       if (answers[ansId] && answers[ansId].date === today) {
-        todayNumericId = Number(ansId);
+        todayAnswerId = Number(ansId);
         break;
       }
     }
@@ -186,11 +185,11 @@ app.get('/api/game-count/:mode', (req, res) => {
       const state = user[mode];
       if (
         state &&
-        state.gameId === todayNumericId &&
+        state.answerId === todayAnswerId &&
         state.hasWon &&
         Array.isArray(state.guesses) &&
         state.guesses.length > 0 &&
-        state.guesses[state.guesses.length - 1] === todayAnswerId
+        state.guesses[state.guesses.length - 1] === todayPersonId
       ) {
         count++;
       }
@@ -203,13 +202,13 @@ app.get('/api/game-count/:mode', (req, res) => {
 app.get('/api/game/:userId/:mode', (req, res) => {
   const { userId, mode } = req.params;
   const games = readGames();
-  const today = getGameIdForToday();
+  const today = getAnswerDateForToday();
   // S'assure que la réponse du jour est bien générée et stockée
-  const { gameId } = getAnswerForDay(mode, today, vjlData);
+  const { answerId } = getAnswerForDay(mode, today, vjlData);
   let user = games[userId] || {};
   let state = user[mode] || null;
   if (!state || typeof state !== 'object') {
-    state = { guesses: [], hasWon: false, gameId };
+    state = { guesses: [], hasWon: false, answerId };
     user[mode] = state;
     games[userId] = user;
     writeGames(games);
@@ -222,16 +221,16 @@ app.post('/api/game/:userId/:mode', (req, res) => {
   const { userId, mode } = req.params;
   const { guesses, hasWon } = req.body;
   const games = readGames();
-  const today = getGameIdForToday();
-  const { gameId } = getAnswerForDay(mode, today, vjlData);
+  const today = getAnswerDateForToday();
+  const { answerId } = getAnswerForDay(mode, today, vjlData);
   if (!games[userId]) games[userId] = {};
   let state = games[userId][mode] || null;
   if (!state || typeof state !== 'object') {
-    state = { guesses, hasWon, gameId };
+    state = { guesses, hasWon, answerId };
   } else {
     state.guesses = guesses;
     state.hasWon = hasWon;
-    state.gameId = gameId;
+    state.answerId = answerId;
   }
   // Ajout : si victoire, on enregistre le rang (combientième)
   if (hasWon && !state.rank) {
@@ -242,7 +241,7 @@ app.post('/api/game/:userId/:mode', (req, res) => {
       const other = games[otherUserId][mode];
       if (
         other &&
-        other.gameId === gameId &&
+        other.answerId === answerId &&
         other.hasWon &&
         Array.isArray(other.guesses) &&
         other.guesses.length > 0 &&
@@ -260,7 +259,7 @@ app.post('/api/game/:userId/:mode', (req, res) => {
 
 // Ajout d'une route pour exposer la date du jour (Europe/Paris) au frontend
 app.get('/api/today', (req, res) => {
-  res.json({ today: getGameIdForToday() });
+  res.json({ today: getAnswerDateForToday() });
 });
 
 // GET /api/guess-counts/:mode
@@ -268,22 +267,22 @@ app.get('/api/today', (req, res) => {
 app.get('/api/guess-counts/:mode', (req, res) => {
   const { mode } = req.params;
   const games = readGames();
-  const today = getGameIdForToday();
+  const today = getAnswerDateForToday();
   // Récupère la bonne réponse du jour pour ce mode
   const answers = readAnswers();
-  let todayNumericId = null;
+  let todayAnswerId = null;
   for (const ansId in answers) {
     if (answers[ansId] && answers[ansId].date === today) {
-      todayNumericId = Number(ansId);
+      todayAnswerId = Number(ansId);
       break;
     }
   }
   const counts = {};
-  if (todayNumericId !== null) {
+  if (todayAnswerId !== null) {
     for (const userId in games) {
       const user = games[userId];
       const state = user[mode];
-      if (state && state.gameId === todayNumericId && Array.isArray(state.guesses)) {
+      if (state && state.answerId === todayAnswerId && Array.isArray(state.guesses)) {
         for (const pid of state.guesses) {
           counts[pid] = (counts[pid] || 0) + 1;
         }
@@ -324,7 +323,7 @@ function getFormattedCitationOfTheDay(discordUserId, citationIdx) {
 app.get('/api/citation-of-the-day/:discordUserId', (req, res) => {
   const { discordUserId } = req.params;
   const answers = readAnswers();
-  const today = getGameIdForToday();
+  const today = getAnswerDateForToday();
   let answerId = null;
   for (const id in answers) {
     if (answers[id] && answers[id].date === today) {
@@ -358,7 +357,7 @@ app.get('/api/citation-of-the-day/:discordUserId', (req, res) => {
 app.get('/api/image-of-the-day/:discordUserId', async (req, res) => {
   const { discordUserId } = req.params;
   const answers = readAnswers();
-  const today = getGameIdForToday();
+  const today = getAnswerDateForToday();
   let answerId = null;
   for (const id in answers) {
     if (answers[id] && answers[id].date === today) {
@@ -494,7 +493,7 @@ async function generateImageOfTheDay(today, discordUserId) {
 // Planifie une purge quotidienne à minuit Europe/Paris
 cron.schedule('0 0 * * *', async () => {
   cronReady = false; // Le cron commence
-  const today = getGameIdForToday();
+  const today = getAnswerDateForToday();
   writeGames({});
   // Utilise la liste centralisée des modes
   for (const modeObj of modes) {
@@ -502,8 +501,8 @@ cron.schedule('0 0 * * *', async () => {
   }
   const answers = readAnswers();
   const todayAnswer = answers[Object.keys(answers).find(id => answers[id].date === today)];
-  generateCitationOfTheDay(today, getPersonById(todayAnswer.modes['citation'].answer).discordUserId);
-  await generateImageOfTheDay(today, getPersonById(todayAnswer.modes['image'].answer).discordUserId);
+  generateCitationOfTheDay(today, getPersonById(todayAnswer.modes['citation'].personId).discordUserId);
+  await generateImageOfTheDay(today, getPersonById(todayAnswer.modes['image'].personId).discordUserId);
   cronReady = true; // Le cron est fini, tout est prêt
   console.log(`[CRON] Purge quotidienne effectuée pour la date ${today} (games.json vidé, answers du jour générées)`);
 }, {

@@ -69,7 +69,7 @@ function concatAndFilterMessages(rows) {
                             timestamp: currentTimestamps[idx],
                             url: currentUrls[idx],
                             attachmentsCount: currentAttachments[idx]
-                        }))
+                        })).filter(m => m.content && m.content.trim().length > 0)
                     });
                 }
             }
@@ -105,7 +105,7 @@ function concatAndFilterMessages(rows) {
                     timestamp: currentTimestamps[idx],
                     url: currentUrls[idx],
                     attachmentsCount: currentAttachments[idx]
-                }))
+                })).filter(m => m.content && m.content.trim().length > 0)
             });
         }
     }

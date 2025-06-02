@@ -43,7 +43,7 @@ const CitationGuessHistory: React.FC<CitationGuessHistoryProps> = ({ guesses, gu
           >
             {/* Icône et nombre en haut à droite */}
               <div className="citation-guess-people">
-                <Tooltip content="Le nombre de joueurs qui ont également essayé ce membre">
+                <Tooltip content="Le nombre de joueurs qui ont également essayé ce membre" direction='top'>
                     <img src="/people.png" alt="personnes" width={26} height={26} style={{ display: 'block', margin: '0 auto' }} />
                     <div className="citation-guess-people-count">{guessCounts[person.id] ?? 0}</div>
                 </Tooltip>
