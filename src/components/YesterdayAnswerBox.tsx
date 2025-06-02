@@ -3,7 +3,7 @@ import type { VJLPerson } from '../types/VJLPerson';
 
 interface YesterdayAnswerBoxProps {
   yesterdayAnswer: VJLPerson;
-  gameId?: number | string; // Optionnel, pour afficher le numéro de partie
+  gameId: number; // Optionnel, pour afficher le numéro de partie
 }
 
 const YesterdayAnswerBox: React.FC<YesterdayAnswerBoxProps> = ({ yesterdayAnswer, gameId }) => {

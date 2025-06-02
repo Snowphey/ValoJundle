@@ -101,26 +101,15 @@ function getOrCreateAnswerNumericId(date) {
   return nextId;
 }
 
-function getAnswerForDay(mode, date, vjlData) {
+function getAnswerForDay(mode, date, vjlData, createIfMissing = true) {
   let answers = readAnswers();
   const id = getOrCreateAnswerNumericId(date);
   if (!answers[id]) {
+    if (!createIfMissing) return null;
     answers[id] = { date, modes: {} };
   }
   if (!answers[id].modes[mode]) {
-    function getSeededRandom(seed) {
-      let h = 2166136261 >>> 0;
-      for (let i = 0; i < seed.length; i++) {
-        h ^= seed.charCodeAt(i);
-        h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
-      }
-      return () => {
-        h += 0x6D2B79F5;
-        let t = Math.imul(h ^ h >>> 15, 1 | h);
-        t ^= t + Math.imul(t ^ t >>> 7, 61 | t);
-        return ((t ^ t >>> 14) >>> 0) / 4294967296;
-      };
-    }
+    if (!createIfMissing) return null;
     // 1. Exclure la réponse du jour précédent (tous modes)
     // Calcul du jour précédent en Europe/Paris
     const dateParis = getParisDateObj(new Date(date + 'T00:00:00'));
@@ -137,11 +126,16 @@ function getAnswerForDay(mode, date, vjlData) {
     // 2. Exclure les réponses déjà attribuées aux autres modes du jour
     const usedToday = Object.values(answers[id].modes).map(m => m.answer);
     // 3. Générer une réponse qui n'est ni la réponse du mode la veille ni déjà attribuée aujourd'hui
-    const rand = getSeededRandom(date + '-' + mode);
-    let pool = vjlData.map(p => p.id).filter(pid => pid !== prevAnswer && !usedToday.includes(pid));
-    if (pool.length === 0) pool = vjlData.map(p => p.id); // fallback extrême
-    let idx = Math.floor(rand() * pool.length);
-    answers[id].modes[mode] = { answer: pool[idx] };
+    let pool = vjlData.map(p => p.id);
+    let candidate = null;
+    let tries = 0;
+    do {
+      candidate = pool[Math.floor(Math.random() * pool.length)];
+      tries++;
+      // Sécurité anti-boucle infinie (au cas où tout est utilisé, on prend n'importe qui)
+      if (tries > 100) break;
+    } while ((candidate === prevAnswer) || usedToday.includes(candidate));
+    answers[id].modes[mode] = { answer: candidate };
     writeAnswers(answers);
   }
   return { id: answers[id].modes[mode].answer, gameId: Number(id) };
@@ -153,6 +147,14 @@ app.get('/api/answer/:mode/:date', (req, res) => {
   // getAnswerForDay retourne maintenant { id, gameId }
   const { id, gameId } = getAnswerForDay(mode, date, vjlData);
   res.json({ id, gameId });
+});
+
+// Nouvelle route pour obtenir la réponse SANS création automatique
+app.get('/api/answer-if-exists/:mode/:date', (req, res) => {
+  const { mode, date } = req.params;
+  const result = getAnswerForDay(mode, date, vjlData, false);
+  if (!result) return res.json(null);
+  res.json(result);
 });
 
 // GET /api/game-count/:mode

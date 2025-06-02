@@ -7,9 +7,8 @@ import AnimatedCounter from './components/AnimatedCounter';
 import { useWonModes } from './WonModesContext';
 import CitationGuessHistory from './components/CitationGuessHistory';
 import { buildShareText } from './utils/buildShareText';
-import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswerIdAndGameId, fetchWinnersCount, getPersonById, fetchTodayFromBackend, fetchCitationOfTheDay, fetchGuessCounts, fetchCronReadyFromBackend } from './api/api';
+import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswer, fetchAnswerIfExists, fetchWinnersCount, getPersonById, fetchTodayFromBackend, fetchCitationOfTheDay, fetchGuessCounts, fetchCronReadyFromBackend } from './api/api';
 import AllModesShareBox from './components/AllModesShareBox';
-import { getAnswerForDate } from './utils/getAnswerForDate';
 import YesterdayAnswerBox from './components/YesterdayAnswerBox';
 
 const GAME_MODE = 'citation';
@@ -73,9 +72,9 @@ const CitationPage: React.FC = () => {
       setLoading(true);
       try {
         const today = await fetchTodayFromBackend();
-        const { id: answerId, gameId } = await fetchAnswerIdAndGameId(GAME_MODE, today);
-        setGameId(gameId);
-        const answerObj = getPersonById(answerId);
+        const answer = await fetchAnswer(GAME_MODE, today);
+        setGameId(answer.gameId);
+        const answerObj = getPersonById(answer.id);
         setAnswer(answerObj || null);
         // Citation Discord du jour (déterministe)
         if (answerObj?.discordUserId) {
@@ -278,12 +277,14 @@ const CitationPage: React.FC = () => {
       const yesterday = new Date(todayDate);
       yesterday.setDate(todayDate.getDate() - 1);
       const yDate = yesterday.toISOString().slice(0, 10);
-      const yAnswerId = getAnswerForDate(GAME_MODE, yDate);
-      if (yAnswerId) {
-        const { gameId: yGameId } = await fetchAnswerIdAndGameId(GAME_MODE, yDate);
-        setYesterdayGameId(yGameId);
-        const yAnswerObj = getPersonById(yAnswerId);
+      const yAnswerData = await fetchAnswerIfExists(GAME_MODE, yDate);
+      if (yAnswerData && typeof yAnswerData.id !== 'undefined') {
+        setYesterdayGameId(yAnswerData.gameId);
+        const yAnswerObj = getPersonById(yAnswerData.id);
         setYesterdayAnswer(yAnswerObj || null);
+      } else {
+        setYesterdayGameId(null);
+        setYesterdayAnswer(null);
       }
     })();
   }, []);
@@ -399,8 +400,8 @@ const CitationPage: React.FC = () => {
         </div>
       )}
       {/* Réponse d'hier tout en bas */}
-      {yesterdayAnswer && (
-        <YesterdayAnswerBox yesterdayAnswer={yesterdayAnswer} gameId={yesterdayGameId ?? undefined} />
+      {yesterdayAnswer && yesterdayGameId && (
+        <YesterdayAnswerBox yesterdayAnswer={yesterdayAnswer} gameId={yesterdayGameId} />
       )}
     </div>
   );
