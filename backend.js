@@ -333,7 +333,7 @@ app.get('/api/citation-of-the-day/:discordUserId', (req, res) => {
     }
   }
   if (!answerId || !answers[answerId].modes['citation']) {
-    return res.json(null);
+    return res.status(404).json({ error: 'citation_not_found' });
   }
   // Si la citation du jour n'est pas encore générée, on la génère
   if (answers[answerId].modes['citation'].citationIdx === undefined) {
@@ -342,23 +342,23 @@ app.get('/api/citation-of-the-day/:discordUserId', (req, res) => {
     const refreshed = readAnswers();
     const refreshedAnswer = refreshed[answerId];
     if (!refreshedAnswer || !refreshedAnswer.modes['citation'] || refreshedAnswer.modes['citation'].citationIdx === undefined) {
-      return res.json(null);
+      return res.status(500).json({ error: 'citation_generation_failed' });
     }
     const result = getFormattedCitationOfTheDay(discordUserId, refreshedAnswer.modes['citation'].citationIdx);
+    if (!result) return res.status(404).json({ error: 'citation_not_found' });
     return res.json(result);
   }
   // Sinon, on lit la citation du jour pour ce userId
   const result = getFormattedCitationOfTheDay(discordUserId, answers[answerId].modes['citation'].citationIdx);
+  if (!result) return res.status(404).json({ error: 'citation_not_found' });
   return res.json(result);
 });
 
 // GET /api/image-of-the-day/:discordUserId
 app.get('/api/image-of-the-day/:discordUserId', async (req, res) => {
   const { discordUserId } = req.params;
-
   const answers = readAnswers();
   const today = getGameIdForToday();
-  
   let answerId = null;
   for (const id in answers) {
     if (answers[id] && answers[id].date === today) {
@@ -367,17 +367,20 @@ app.get('/api/image-of-the-day/:discordUserId', async (req, res) => {
     }
   }
   if (!answerId || !answers[answerId].modes['image']) {
-    return res.json(null);
+    return res.status(404).json({ error: 'image_not_found' });
   }
-
   // Si l'image du jour n'est pas encore générée, on la génère
   if (!answers[answerId].modes['image'].imageUrl || !answers[answerId].modes['image'].url) {
-    await generateImageOfTheDay(today, discordUserId);
+    const result = await generateImageOfTheDay(today, discordUserId);
+    if (result !== 'ok') {
+      // Erreur technique lors de la génération (ex: Discord down)
+      return res.status(500).json({ error: result });
+    }
     // Recharge après génération
     const refreshed = readAnswers();
     const refreshedAnswer = refreshed[answerId];
     if (!refreshedAnswer || !refreshedAnswer.modes['image'] || !refreshedAnswer.modes['image'].imageUrl || !refreshedAnswer.modes['image'].url) {
-      return res.json(null);
+      return res.status(500).json({ error: 'image_generation_failed' });
     }
     // On renvoie l'image générée
     return res.json({ imageUrl: refreshedAnswer.modes['image'].imageUrl, url: refreshedAnswer.modes['image'].url });
@@ -426,15 +429,16 @@ async function generateImageOfTheDay(today, discordUserId) {
   try {
     attachments = JSON.parse(fs.readFileSync(attachmentsPath, 'utf8'));
   } catch {
-    return;
+    return 'attachments_read_error';
   }
   const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
   const userAttachments = attachments.filter(a => a.userId === discordUserId && a.attachmentsCount > 0);
-  if (!userAttachments.length) return;
+  if (!userAttachments.length) return 'no_attachments';
   const randomAttachment = userAttachments[Math.floor(Math.random() * userAttachments.length)];
   const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
   let imageUrl = null;
   let url = null;
+  let loginFailed = false;
   try {
     await new Promise((resolve, reject) => {
       client.once('ready', async () => {
@@ -454,12 +458,18 @@ async function generateImageOfTheDay(today, discordUserId) {
         client.destroy();
         resolve();
       });
-      client.login(config.token);
+      client.login(config.token).catch(err => {
+        loginFailed = true;
+        client.destroy();
+        resolve();
+      });
     });
   } catch {
-    return;
+    client.destroy();
+    return 'discord_error';
   }
-  if (!imageUrl || !url) return;
+  if (loginFailed) return 'discord_error';
+  if (!imageUrl || !url) return 'no_image_found';
   // Écriture manuelle dans answers.json
   let answers = readAnswers();
   let answerId = null;
@@ -478,6 +488,7 @@ async function generateImageOfTheDay(today, discordUserId) {
   answers[answerId].modes['image'].imageUrl = imageUrl;
   answers[answerId].modes['image'].url = url;
   writeAnswers(answers);
+  return 'ok';
 }
 
 // Planifie une purge quotidienne à minuit Europe/Paris
