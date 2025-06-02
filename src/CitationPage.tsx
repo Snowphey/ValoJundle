@@ -248,9 +248,7 @@ const CitationPage: React.FC = () => {
 
   // Pour l'affichage des guesses
   const guessObjects = guesses.map(id => getPersonById(id)).filter(Boolean) as VJLPerson[];
-  // Utilise le vrai guessCounts récupéré du backend
-  // TODO: Récupérer le vrai nombre de joueurs ayant tenté chaque guess via l'API (optionnel)
-
+  
   // Confetti (optionnel)
   useEffect(() => {
     if (showConfetti) {
@@ -320,7 +318,7 @@ const CitationPage: React.FC = () => {
       }}>
         <div style={{ fontSize: '1.25rem', marginBottom: 8, fontWeight: 700 }}>Qui a dit :</div>
         <div style={{ fontSize: '2rem', fontStyle: 'italic', margin: '18px 0', lineHeight: 1.4, whiteSpace: 'pre-line' }}>
-          “ {mainMessage} ”
+          “ {mainMessage.content} ”
         </div>
       </div>
       {/* Input de guess */}

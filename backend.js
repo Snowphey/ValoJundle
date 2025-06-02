@@ -293,6 +293,33 @@ app.get('/api/guess-counts/:mode', (req, res) => {
   res.json(counts);
 });
 
+// Utilitaire pour récupérer la citation du jour formatée pour un utilisateur Discord
+function getFormattedCitationOfTheDay(discordUserId, citationIdx) {
+  const citationsPath = path.join(__dirname, 'discord', 'citations.json');
+  let citations = [];
+  try {
+    citations = JSON.parse(fs.readFileSync(citationsPath, 'utf8'));
+  } catch {
+    return null;
+  }
+  const userCitations = citations.filter(c => c.userId === discordUserId && Array.isArray(c.messages) && c.messages.length > 0);
+  if (!userCitations.length) return null;
+  const allMessages = userCitations.flatMap(c => c.messages.filter(m => m.content && m.content.trim().length > 0));
+  if (!allMessages.length) return null;
+  if (citationIdx === undefined || citationIdx >= allMessages.length) return null;
+  // Trouver la citation d'origine contenant ce message
+  const citation = userCitations.find(c => c.messages.some((m, i) => m.content && m.content.trim().length > 0 && allMessages[citationIdx] === m));
+  if (!citation) return null;
+  // Trouver l'URL du message avec la timestamp la plus ancienne (premier message du pavé)
+  let firstMsg = citation.messages
+    .filter(m => m.content && m.content.trim().length > 0 && m.url && m.timestamp)
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))[0];
+  return {
+    content: citation.messages.map(m => m.content).join('\n'),
+    url: firstMsg ? firstMsg.url : null
+  };
+}
+
 // GET /api/citation-of-the-day/:discordUserId
 app.get('/api/citation-of-the-day/:discordUserId', (req, res) => {
   const { discordUserId } = req.params;
@@ -317,45 +344,12 @@ app.get('/api/citation-of-the-day/:discordUserId', (req, res) => {
     if (!refreshedAnswer || !refreshedAnswer.modes['citation'] || refreshedAnswer.modes['citation'].citationIdx === undefined) {
       return res.json(null);
     }
-    // On lit la citation du jour pour ce userId
-    const citationsPath = path.join(__dirname, 'discord', 'citations.json');
-    let citations = [];
-    try {
-      citations = JSON.parse(fs.readFileSync(citationsPath, 'utf8'));
-    } catch {
-      return res.json(null);
-    }
-    const userCitations = citations.filter(c => c.userId === discordUserId && Array.isArray(c.messages) && c.messages.length > 0);
-    if (!userCitations.length) return res.json(null);
-    const allMessages = userCitations.flatMap(c => c.messages.filter(m => m.content && m.content.trim().length > 0));
-    if (!allMessages.length) return res.json(null);
-    const idx = refreshedAnswer.modes['citation'].citationIdx;
-    if (idx >= allMessages.length) return res.json(null);
-    // Trouver la citation d'origine contenant ce message
-    const citation = userCitations.find(c => c.messages.some((m, i) => m.content && m.content.trim().length > 0 && allMessages[idx] === m));
-    if (!citation) return res.json(null);
-    // Retourner tous les contents de cette citation, séparés par \n
-    return res.json(citation.messages.map(m => m.content).join('\n'));
+    const result = getFormattedCitationOfTheDay(discordUserId, refreshedAnswer.modes['citation'].citationIdx);
+    return res.json(result);
   }
   // Sinon, on lit la citation du jour pour ce userId
-  const citationsPath = path.join(__dirname, 'discord', 'citations.json');
-  let citations = [];
-  try {
-    citations = JSON.parse(fs.readFileSync(citationsPath, 'utf8'));
-  } catch {
-    return res.json(null);
-  }
-  const userCitations = citations.filter(c => c.userId === discordUserId && Array.isArray(c.messages) && c.messages.length > 0);
-  if (!userCitations.length) return res.json(null);
-  const allMessages = userCitations.flatMap(c => c.messages.filter(m => m.content && m.content.trim().length > 0));
-  if (!allMessages.length) return res.json(null);
-  const idx = answers[answerId].modes['citation'].citationIdx;
-  if (idx >= allMessages.length) return res.json(null);
-  // Trouver la citation d'origine contenant ce message
-  const citation = userCitations.find(c => c.messages.some((m, i) => m.content && m.content.trim().length > 0 && allMessages[idx] === m));
-  if (!citation) return res.json(null);
-  // Retourner tous les contents de cette citation, séparés par \n
-  return res.json(citation.messages.map(m => m.content).join('\n'));
+  const result = getFormattedCitationOfTheDay(discordUserId, answers[answerId].modes['citation'].citationIdx);
+  return res.json(result);
 });
 
 // GET /api/image-of-the-day/:discordUserId

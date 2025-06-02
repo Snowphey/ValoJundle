@@ -248,9 +248,7 @@ const ImagePage: React.FC = () => {
 
   // Pour l'affichage des guesses
   const guessObjects = guesses.map(id => getPersonById(id)).filter(Boolean) as VJLPerson[];
-  // Utilise le vrai guessCounts récupéré du backend
-  // TODO: Récupérer le vrai nombre de joueurs ayant tenté chaque guess via l'API (optionnel)
-
+  
   // Confetti (optionnel)
   useEffect(() => {
     if (showConfetti) {
