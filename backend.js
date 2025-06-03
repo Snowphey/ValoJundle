@@ -27,6 +27,31 @@ app.use(express.json());
 // --- FLAG CRON READY ---
 let cronReady = true; // true au démarrage, false pendant le cron
 
+// --- Purge et génération du jour si besoin au démarrage ---
+async function ensureDailyPurgeAndGeneration() {
+  const today = getAnswerDateForToday();
+  const answers = readAnswers();
+  const hasToday = Object.values(answers).some(a => a && a.date === today);
+  if (!hasToday) {
+    cronReady = false;
+    writeGames({});
+    for (const modeObj of modes) {
+      getAnswerForDay(modeObj.key, today, vjlData);
+    }
+    const refreshed = readAnswers();
+    const todayAnswer = refreshed[Object.keys(refreshed).find(id => refreshed[id].date === today)];
+    if (todayAnswer && todayAnswer.modes['citation'] && todayAnswer.modes['image']) {
+      generateCitationOfTheDay(today, getPersonById(todayAnswer.modes['citation'].personId).discordUserId);
+      await generateImageOfTheDay(today, getPersonById(todayAnswer.modes['image'].personId).discordUserId);
+    }
+    cronReady = true;
+    console.log(`[INIT] Purge et génération effectuées pour la date ${today} (games.json vidé, answers du jour générées)`);
+  }
+}
+
+// Appel au démarrage
+ensureDailyPurgeAndGeneration();
+
 // Route pour exposer l'état du cron
 app.get('/api/cron-ready', (req, res) => {
   res.json({ ready: cronReady });
