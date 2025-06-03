@@ -338,8 +338,12 @@ function getFormattedCitationOfTheDay(discordUserId, citationIdx) {
   let firstMsg = citation.messages
     .filter(m => m.content && m.content.trim().length > 0 && m.url && m.timestamp)
     .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))[0];
+  // Correction : trier les messages par timestamp croissant avant de les afficher
+  const sortedMessages = citation.messages
+    .filter(m => m.content && m.content.trim().length > 0)
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   return {
-    content: citation.messages.map(m => m.content).join('\n'),
+    content: sortedMessages.map(m => m.content).join('\n'),
     url: firstMsg ? firstMsg.url : null
   };
 }
