@@ -29,8 +29,6 @@ export function buildShareText(
 
   // Récupère le label du mode depuis modes.json
   const modeLabel = (modes.find(m => m.key === mode)?.label || mode);
-  console.log(modes);
-  console.log(modeLabel);
   let text = `J'ai trouvé le membre #ValoJundle #${gameNumber} en mode ${modeLabel} en ${tries} coup${tries > 1 ? "s" : ""}  ⚔️\n`;
   const colorMap: Record<string, string> = {
     correct: '🟩',  
