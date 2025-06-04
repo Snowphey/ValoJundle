@@ -172,6 +172,27 @@ const ClassicPage: React.FC = () => {
     }
   }, [hasWon, showVictoryBox]);
 
+  // Scroll vers la victoire même après un refresh si on a gagné
+  useEffect(() => {
+    if (hasWon && showVictoryBox) {
+      // On lance le scroll quand le DOM est prêt
+      if (resultRef.current) {
+        resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        // Utilise MutationObserver pour attendre que le DOM soit prêt
+        const observer = new MutationObserver(() => {
+          if (resultRef.current) {
+            resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            observer.disconnect();
+          }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+        // Clean up
+        return () => observer.disconnect();
+      }
+    }
+  }, [hasWon, showVictoryBox]);
+
   // Callback à passer à ClassicGuessHistory pour la fin d'animation
   const handleLineAnimationEnd = useCallback(async () => {
     if (!pendingVictory) return;

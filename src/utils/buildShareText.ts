@@ -19,17 +19,28 @@ export function buildShareText(
   if (!guesses.length) return '';
   const tries = guesses.length;
 
+  // Définition des seuils "facile" par mode
+  const easyThresholds: Record<string, number> = {
+    classic: 3,
+    citation: 5,
+    image: 5,
+  };
+  const easyLimit = easyThresholds[mode] || 0;
+  const isOneShot = tries === 1;
+  const isEasy = !isOneShot && tries > 0 && tries <= easyLimit;
+  const oneShotEmoji = '🤯';
+
   if (mode === 'citation') {
-    return `J'ai trouvé le membre #ValoJundle #${gameNumber} avec une citation en ${tries} coup${tries > 1 ? 's' : ''}  ⚔️\n\n${URL}`;
+    return `J'ai trouvé le membre #ValoJundle #${gameNumber} avec une citation en ${tries} coup${tries > 1 ? 's' : ''}${isOneShot ? ` ${oneShotEmoji}` : isEasy ? ' (facile)' : ''}  ⚔️\n\n${URL}`;
   }
 
   if (mode === 'image') {
-    return `J'ai trouvé le membre #ValoJundle #${gameNumber} avec une image en ${tries} coup${tries > 1 ? 's' : ''}  ⚔️\n\n${URL}`;
+    return `J'ai trouvé le membre #ValoJundle #${gameNumber} avec une image en ${tries} coup${tries > 1 ? 's' : ''}${isOneShot ? ` ${oneShotEmoji}` : isEasy ? ' (facile)' : ''}  ⚔️\n\n${URL}`;
   }
 
   // Récupère le label du mode depuis modes.json
   const modeLabel = (modes.find(m => m.key === mode)?.label || mode);
-  let text = `J'ai trouvé le membre #ValoJundle #${gameNumber} en mode ${modeLabel} en ${tries} coup${tries > 1 ? "s" : ""}  ⚔️\n`;
+  let text = `J'ai trouvé le membre #ValoJundle #${gameNumber} en mode ${modeLabel} en ${tries} coup${tries > 1 ? "s" : ""}${isOneShot ? ` ${oneShotEmoji}` : isEasy ? ' (facile)' : ''}  ⚔️\n`;
   const colorMap: Record<string, string> = {
     correct: '🟩',  
     partial: '🟧',

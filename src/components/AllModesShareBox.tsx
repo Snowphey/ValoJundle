@@ -3,14 +3,6 @@ import modes from '../data/modes.json';
 import { useWonModes } from '../WonModesContext';
 import { loadGame } from '../api/api';
 
-const MODE_ICONS: Record<string, string> = {
-  classic: '❓',
-  citation: '💬',
-  image: '🖼️',
-};
-
-const MODE_LABELS: Record<string, string> = Object.fromEntries(modes.map(m => [m.key, m.label]));
-
 const AllModesShareBox: React.FC = () => {
   const { wonModes } = useWonModes();
   const [tries, setTries] = React.useState<Record<string, number>>({});
@@ -33,9 +25,17 @@ const AllModesShareBox: React.FC = () => {
   const allModesWon = modes.every(m => wonModes.includes(m.key)) && wonModes.length === modes.length;
   if (!allModesWon) return null;
 
+  // Ajout de l'emoji 🤯 si 1 coup dans le résumé global
+  const oneShotEmoji = '🤯';
+
   const shareText = [
     `J'ai complété tous les modes de #ValoJundle aujourd'hui :`,
-    ...modes.map(mode => `${MODE_ICONS[mode.key] || ''} ${MODE_LABELS[mode.key]}: ${tries[mode.key] ?? '?'}`),
+    ...modes.map(mode => {
+      const triesCount = tries[mode.key] ?? '?';
+      let suffix = '';
+      if (triesCount === 1) suffix = ` ${oneShotEmoji}`;
+      return `${mode.emoji || ''} ${mode.label} : ${triesCount}${suffix}`;
+    }),
     '',
     import.meta.env.VITE_PUBLIC_URL || 'http://localhost:5173',
   ].join('\n');

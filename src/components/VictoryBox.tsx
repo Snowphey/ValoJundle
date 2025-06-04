@@ -27,9 +27,23 @@ const VictoryBox: React.FC<VictoryBoxProps> = ({
 }) => {
   const navigate = useNavigate();
 
+  // Liste de textes de victoire
+  const victoryTexts = [
+    "VICTOIRE !",
+    "gg wp",
+    "ez",
+    "Point faible : trop fort !",
+    "Masterclass !",
+    "Tu serais pas Adrien ? Parce que tu es le boss...",
+    "Carré dans l'axe !",
+    "C'est du propre !"
+  ];
+  // Choix aléatoire une seule fois au montage
+  const [victoryText] = React.useState(() => victoryTexts[Math.floor(Math.random() * victoryTexts.length)]);
+
   return (
     <div className="victory-box-gradient">
-      <div className="victory-header">VICTOIRE !</div>
+      <div className="victory-header">{victoryText}</div>
       <div className="victory-member-row">
         <img src={memberIcon} alt={memberName} className="victory-member-icon" />
         <div className="victory-member-text">
