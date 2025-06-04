@@ -72,6 +72,10 @@ Ces fichiers seront manipulés par le backend pour récupérer une citation et u
 
 Ce traitement peut être effectué une seule fois ou bien de manière périodique, selon vos préférences. Il est assez long car il doit récupérer l'intégralité des messages jamais envoyés.
 
+> ⚠️ Les scripts de récupération (`scrap-messages.js`) et de filtrage (`filtrageData.js`) sont exécutés automatiquement chaque nuit par le backend grâce à une tâche cron (voir `backend.js`).
+
+> Si les scripts ont déjà été lancés et que des données ont été extraites, les relancer ne fera qu'ajouter les nouveaux messages envoyés depuis la dernière extraction. C'est pourquoi l'extraction la plus longue sera la première. Les prochaines seront nettement plus courtes.
+
 ### Lancement du backend (API)
 Dans un terminal :
 ```powershell
