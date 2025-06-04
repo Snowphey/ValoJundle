@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const stopwords = require('stopwords').french;
 
-const rawDataDir = 'raw_data';
+const rawDataDir = path.join(__dirname, 'raw_data');
 
 // 1. Charger tous les JSON
 function loadAllJSONs() {
@@ -124,7 +124,7 @@ function containsMeaningfulWords(text) {
     const allRows = loadAllJSONs();
     const citations = concatAndFilterMessages(allRows);
     const attachments = extractAttachments(allRows);
-    exportCitationsJSON(citations, 'citations.json');
-    exportAttachmentsJSON(attachments, 'attachments.json');
+    exportCitationsJSON(citations, path.join(__dirname, 'citations.json'));
+    exportAttachmentsJSON(attachments, path.join(__dirname, 'attachments.json'));
     console.log('Export citations, attachments terminé.');
 })();

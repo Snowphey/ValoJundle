@@ -4,7 +4,7 @@ const { token, guildId, channelsIds } = require('./config.json');
 const fs = require('fs');
 const path = require('path');
 
-const folder_path = 'raw_data';
+const folder_path = path.join(__dirname, 'raw_data');
 
 // Create a new Discord client
 const client = new Client({ intents: [GatewayIntentBits.Guilds], partials: [Partials.Channel] });
@@ -23,6 +23,7 @@ client.once('ready', async () => {
     for (const channel of channels.values()) {
         let messages = [];
         let lastMessageId;
+        let isIncremental = false;
 
         // Load existing messages if file exists (for incremental extraction)
         const dirPath = path.resolve(__dirname, folder_path);
@@ -38,27 +39,70 @@ client.once('ready', async () => {
                     // Find the latest messageId (by timestamp)
                     const sorted = [...messages].sort((a, b) => b.timestamp - a.timestamp);
                     lastMessageId = sorted[0].messageId;
+                    isIncremental = true;
                 }
             } catch (err) {
                 console.error(`Error reading existing JSON for channel ${channel.name}`, err);
             }
         }
 
-        // If lastMessageId is set, fetch only messages after it (incremental)
-        let fetchOptions = { limit: 100 };
-        if (lastMessageId) fetchOptions.after = lastMessageId;
-
-        while (true) {
-            let fetchedMessages = await channel.messages.fetch(fetchOptions);
-            fetchedMessages = fetchedMessages.filter(message => !message.author.bot);
-
-            console.log(`Fetching ${fetchedMessages.size} messages from channel ${channel.id}`);
-
-            if (fetchedMessages.size === 0) break;
-
-            for (const message of fetchedMessages.values()) {
-                // Skip if message already exists (by messageId)
-                if (messages.some(m => m.messageId === message.id)) continue;
+        if (isIncremental) {
+            // Incrémental : fetch uniquement les nouveaux messages
+            let fetchOptions = { limit: 100 };
+            if (lastMessageId) fetchOptions.after = lastMessageId;
+            while (true) {
+                let fetchedMessages = await channel.messages.fetch(fetchOptions);
+                fetchedMessages = fetchedMessages.filter(message => !message.author.bot);
+                console.log(`Fetching ${fetchedMessages.size} messages from channel ${channel.id}`);
+                if (fetchedMessages.size === 0) break;
+                for (const message of fetchedMessages.values()) {
+                    if (messages.some(m => m.messageId === message.id)) continue;
+                    const attachmentsCount = message.attachments ? message.attachments.size : 0;
+                    let resolvedContent = message.content || '';
+                    if (resolvedContent) {
+                        resolvedContent = resolvedContent.replace(/<@!?([0-9]+)>/g, (match, userId) => {
+                            const user = message.mentions.users.get(userId);
+                            return user ? `@${user.username}` : match;
+                        });
+                        resolvedContent = resolvedContent.replace(/<#(\d+)>/g, (match, channelId) => {
+                            const channelObj = message.mentions.channels?.get(channelId) || message.guild.channels.cache.get(channelId);
+                            return channelObj ? `#${channelObj.name}` : match;
+                        });
+                    }
+                    messages.push({
+                        author: message.author.username,
+                        userId: message.author.id,
+                        guildId: guild.id,
+                        channelId: channel.id,
+                        messageId: message.id,
+                        content: resolvedContent,
+                        timestamp: message.createdTimestamp,
+                        url: message.url,
+                        attachmentsCount: attachmentsCount
+                    });
+                }
+                const newestMsg = [...fetchedMessages.values()].reduce((a, b) => a.createdTimestamp > b.createdTimestamp ? a : b);
+                fetchOptions.after = newestMsg.id;
+                console.log(`Last message ID: ${newestMsg.id}, Date: ${newestMsg.createdAt}`);
+            }
+        } else {
+            // Première extraction : paginer du plus récent vers le plus ancien avec before
+            let fetchOptions = { limit: 100 };
+            let allFetched = [];
+            let beforeId = undefined;
+            while (true) {
+                if (beforeId) fetchOptions.before = beforeId;
+                let fetchedMessages = await channel.messages.fetch(fetchOptions);
+                fetchedMessages = fetchedMessages.filter(message => !message.author.bot);
+                console.log(`Fetching ${fetchedMessages.size} messages from channel ${channel.id}`);
+                if (fetchedMessages.size === 0) break;
+                allFetched.push(...fetchedMessages.values());
+                beforeId = [...fetchedMessages.values()].reduce((a, b) => a.createdTimestamp < b.createdTimestamp ? a : b).id;
+                console.log(`Oldest message ID: ${beforeId}, Date: ${fetchedMessages.get(beforeId)?.createdAt}`);
+            }
+            // On inverse pour avoir du plus ancien au plus récent
+            allFetched.reverse();
+            for (const message of allFetched) {
                 const attachmentsCount = message.attachments ? message.attachments.size : 0;
 
                 // Resolve user and channel mentions (<@userId>, <@!userId>, <#channelId>) to usernames/channel names
@@ -88,11 +132,6 @@ client.once('ready', async () => {
                     attachmentsCount: attachmentsCount
                 });
             }
-
-            // Update fetchOptions for next batch
-            fetchOptions.after = fetchedMessages.last().id;
-
-            console.log(`Last message ID: ${fetchedMessages.last().id}, Date: ${fetchedMessages.last().createdAt}`);
         }
 
         // Write messages to a JSON file per channel

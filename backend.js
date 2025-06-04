@@ -5,7 +5,7 @@ import cors from 'cors';
 import { fileURLToPath } from 'url';
 import cron from 'node-cron';
 import { Client, GatewayIntentBits } from 'discord.js';
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -34,11 +34,10 @@ async function ensureDailyPurgeAndGeneration() {
   let scrapOk = true;
   try {
     await new Promise((resolve) => {
-      exec('node ./discord/scrap-messages.js', (err, stdout, stderr) => {
-        if (stdout) process.stdout.write(stdout);
-        if (stderr) process.stderr.write(stderr);
-        if (err) {
-          console.error('[INIT] Erreur scrap-messages:', err);
+      const child = spawn('node', ['./discord/scrap-messages.js'], { stdio: 'inherit' });
+      child.on('close', (code) => {
+        if (code !== 0) {
+          console.error('[INIT] Erreur scrap-messages: code', code);
           scrapOk = false;
         }
         console.log('[INIT] scrap-messages terminé');
@@ -54,11 +53,10 @@ async function ensureDailyPurgeAndGeneration() {
   if (scrapOk) {
     try {
       await new Promise((resolve) => {
-        exec('node ./discord/filtrageData.js', (err, stdout, stderr) => {
-          if (stdout) process.stdout.write(stdout);
-          if (stderr) process.stderr.write(stderr);
-          if (err) {
-            console.error('[INIT] Erreur filtrageData:', err);
+        const child = spawn('node', ['./discord/filtrageData.js'], { stdio: 'inherit' });
+        child.on('close', (code) => {
+          if (code !== 0) {
+            console.error('[INIT] Erreur filtrageData: code', code);
           }
           console.log('[INIT] filtrageData terminé');
           resolve();
@@ -577,11 +575,10 @@ cron.schedule('0 0 * * *', async () => {
   let scrapOk = true;
   try {
     await new Promise((resolve) => {
-      exec('node ./discord/scrap-messages.js', (err, stdout, stderr) => {
-        if (stdout) process.stdout.write(stdout);
-        if (stderr) process.stderr.write(stderr);
-        if (err) {
-          console.error('[CRON] Erreur scrap-messages:', err);
+      const child = spawn('node', ['./discord/scrap-messages.js'], { stdio: 'inherit' });
+      child.on('close', (code) => {
+        if (code !== 0) {
+          console.error('[CRON] Erreur scrap-messages: code', code);
           scrapOk = false;
         }
         console.log('[CRON] scrap-messages terminé');
@@ -597,11 +594,10 @@ cron.schedule('0 0 * * *', async () => {
   if (scrapOk) {
     try {
       await new Promise((resolve) => {
-        exec('node ./discord/filtrageData.js', (err, stdout, stderr) => {
-          if (stdout) process.stdout.write(stdout);
-          if (stderr) process.stderr.write(stderr);
-          if (err) {
-            console.error('[CRON] Erreur filtrageData:', err);
+        const child = spawn('node', ['./discord/filtrageData.js'], { stdio: 'inherit' });
+        child.on('close', (code) => {
+          if (code !== 0) {
+            console.error('[CRON] Erreur filtrageData: code', code);
           }
           console.log('[CRON] filtrageData terminé');
           resolve();
