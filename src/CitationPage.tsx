@@ -335,7 +335,8 @@ const CitationPage: React.FC = () => {
       }}>
         <div style={{ fontSize: '1.25rem', marginBottom: 8, fontWeight: 700 }}>Qui a dit :</div>
         <div style={{ fontSize: '2rem', fontStyle: 'italic', margin: '18px 0', lineHeight: 1.4, whiteSpace: 'pre-line' }}>
-          “ {mainMessage.content} ”
+          {/* Affichage de la citation avec rendu des émojis custom Discord */}
+          “ <span dangerouslySetInnerHTML={{ __html: renderDiscordEmojis(mainMessage.content) }} /> ”
         </div>
       </div>
       {/* Input de guess */}
@@ -421,5 +422,59 @@ const CitationPage: React.FC = () => {
     </div>
   );
 };
+
+// Fonction utilitaire pour rendre les émojis custom Discord dans le texte
+function renderDiscordEmojis(text: string): string {
+  if (!text) return '';
+  // Remplace les blocs de code markdown ```...```
+  let replaced = text.replace(/```([\s\S]*?)```/g, (_match, code) => {
+    // On échappe le HTML dans le bloc code
+    const escaped = code.replace(/[&<>]/g, (c: string) => {
+      if (c === '&') return '&amp;';
+      if (c === '<') return '&lt;';
+      if (c === '>') return '&gt;';
+      return c;
+    });
+    // Style visuel pour le bloc code Discord
+    return `<pre class=\"discord-code-block\">${escaped}</pre>`;
+  });
+  // Remplace les émojis custom par des balises <img>
+  replaced = replaced.replace(/<a?:([a-zA-Z0-9_]+):(\d+)>/g, (match, name, id) => {
+    const isAnimated = match.startsWith('<a:');
+    const ext = isAnimated ? 'gif' : 'png';
+    const url = `https://cdn.discordapp.com/emojis/${id}.${ext}`;
+    return `<img src=\"${url}\" alt=\":${name}:\" style=\"height:1.2em;vertical-align:-0.2em;\" />`;
+  });
+  // Word wrap intelligent (ne coupe pas les mots)
+  replaced = replaced.replace(/([^\n]{60,}?)(\s|$)/g, (line) => {
+    // Si la ligne est trop longue, on coupe au dernier espace avant 60 caractères
+    if (line.length > 70) {
+      let idx = line.lastIndexOf(' ', 70);
+      if (idx === -1) idx = 70;
+      return line.slice(0, idx) + '\n' + line.slice(idx + 1);
+    }
+    return line;
+  });
+  return replaced;
+}
+// Ajoute le style pour le bloc code Discord
+const style = document.createElement('style');
+style.innerHTML = `
+.discord-code-block {
+  background: #23272a;
+  color: #e6e6e6;
+  font-family: 'Consolas', 'Menlo', 'Monaco', 'Liberation Mono', 'Courier New', monospace;
+  border-radius: 7px;
+  padding: 10px 14px;
+  margin: 8px 0;
+  font-size: 1.05em;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+  max-width: 100%;
+}
+`;
+document.head.appendChild(style);
 
 export default CitationPage;

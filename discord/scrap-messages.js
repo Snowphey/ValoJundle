@@ -62,11 +62,15 @@ client.once('ready', async () => {
                     if (resolvedContent) {
                         resolvedContent = resolvedContent.replace(/<@!?([0-9]+)>/g, (match, userId) => {
                             const user = message.mentions.users.get(userId);
-                            return user ? `@${user.username}` : match;
+                            return user ? `@${user.username}` : '@utilisateur inconnu';
+                        });
+                        resolvedContent = resolvedContent.replace(/<@&([0-9]+)>/g, (match, roleId) => {
+                            const role = message.guild.roles.cache.get(roleId);
+                            return role ? `@${role.name}` : '@rôle inconnu';
                         });
                         resolvedContent = resolvedContent.replace(/<#(\d+)>/g, (match, channelId) => {
                             const channelObj = message.mentions.channels?.get(channelId) || message.guild.channels.cache.get(channelId);
-                            return channelObj ? `#${channelObj.name}` : match;
+                            return channelObj ? `#${channelObj.name}` : '#channel inconnu';
                         });
                     }
                     messages.push({
@@ -111,12 +115,17 @@ client.once('ready', async () => {
                     // Replace user mentions
                     resolvedContent = resolvedContent.replace(/<@!?([0-9]+)>/g, (match, userId) => {
                         const user = message.mentions.users.get(userId);
-                        return user ? `@${user.username}` : match;
+                        return user ? `@${user.username}` : '@utilisateur inconnu';
+                    });
+                    // Replace role mentions
+                    resolvedContent = resolvedContent.replace(/<@&([0-9]+)>/g, (match, roleId) => {
+                        const role = message.guild.roles.cache.get(roleId);
+                        return role ? `@${role.name}` : '@rôle inconnu';
                     });
                     // Replace channel mentions
                     resolvedContent = resolvedContent.replace(/<#(\d+)>/g, (match, channelId) => {
                         const channelObj = message.mentions.channels?.get(channelId) || message.guild.channels.cache.get(channelId);
-                        return channelObj ? `#${channelObj.name}` : match;
+                        return channelObj ? `#${channelObj.name}` : '#channel inconnu';
                     });
                 }
 
