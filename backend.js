@@ -94,6 +94,14 @@ async function ensureDailyPurgeAndGeneration() {
 // Appel au démarrage
 await ensureDailyPurgeAndGeneration();
 
+// Middleware pour bloquer toutes les requêtes tant que le cron n'est pas prêt
+app.use((req, res, next) => {
+  if (!cronReady && req.path !== '/api/cron-ready') {
+    return res.status(503).json({ error: 'cron_not_ready' });
+  }
+  next();
+});
+
 // Route pour exposer l'état du cron
 app.get('/api/cron-ready', (req, res) => {
   res.json({ ready: cronReady });

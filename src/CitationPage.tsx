@@ -63,11 +63,15 @@ const CitationPage: React.FC = () => {
   const [yesterdayAnswer, setYesterdayAnswer] = useState<VJLPerson | null>(null);
   const [yesterdayAnswerId, setYesterdayAnswerId] = useState<number | null>(null);
   const [showVictoryBox, setShowVictoryBox] = useState(false);
+  const [maintenance, setMaintenance] = useState(false);
 
   // Chargement initial depuis le backend
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+    let retryTimeout: NodeJS.Timeout | null = null;
+    async function tryLoad() {
       setLoading(true);
+      setMaintenance(false);
       try {
         const today = await fetchTodayFromBackend();
         const answer = await fetchAnswer(GAME_MODE, today);
@@ -91,10 +95,23 @@ const CitationPage: React.FC = () => {
         // Récupère les guessCounts
         const counts = await fetchGuessCounts(GAME_MODE);
         setGuessCounts(counts);
-      } finally {
+        // Récupère les modes gagnés
+        await refreshWonModes();
         setLoading(false);
+      } catch (err: any) {
+        setMaintenance(true);
+        setLoading(false);
+        // On attend 3s puis on retente
+        retryTimeout = setTimeout(() => {
+          if (!cancelled) tryLoad();
+        }, 3000);
       }
-    })();
+    }
+    tryLoad();
+    return () => {
+      cancelled = true;
+      if (retryTimeout) clearTimeout(retryTimeout);
+    };
   }, []);
 
   // Rafraîchit guessCounts en temps réel
@@ -200,13 +217,15 @@ const CitationPage: React.FC = () => {
         if (diff <= 0) {
           setCountdown('00:00:00');
           // Attendre que le backend ait bien fini le cron (flag explicite)
+          setMaintenance(true);
           let ready = false;
           while (!ready) {
             try {
               ready = await fetchCronReadyFromBackend();
             } catch {}
-            if (!ready) await new Promise(res => setTimeout(res, 1000));
+            if (!ready) await new Promise(res => setTimeout(res, 3000));
           }
+          setMaintenance(false);
           window.location.reload();
           break;
         }
@@ -289,6 +308,12 @@ const CitationPage: React.FC = () => {
       }
     }
   }, [hasWon, showVictoryBox]);
+
+  if (maintenance) {
+    return <div style={{color:'#ffd700',fontWeight:600,fontSize:'1.2rem',textAlign:'center',marginTop:40}}>
+      <span>Maintenance en cours…<br/>Le jeu sera disponible dès que la mise à jour quotidienne est terminée.<br/>Nouvel essai dans quelques secondes…</span>
+    </div>;
+  }
 
   if (loading || !answer || !mainMessage) return <div>Chargement...</div>;
 

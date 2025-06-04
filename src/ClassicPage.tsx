@@ -72,12 +72,16 @@ const ClassicPage: React.FC = () => {
   const [myRank, setMyRank] = useState<number | null>(null);
   const [yesterdayAnswer, setYesterdayAnswer] = useState<VJLPerson | null>(null);
   const [yesterdayAnswerId, setYesterdayAnswerId] = useState<number | null>(null);
+  const [maintenance, setMaintenance] = useState(false);
   const { refreshWonModes } = useWonModes();
 
   // Chargement initial depuis le backend
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+    let retryTimeout: NodeJS.Timeout | null = null;
+    async function tryLoad() {
       setLoading(true);
+      setMaintenance(false);
       try {
         const today = await fetchTodayFromBackend();
         const answer = await fetchAnswer(GAME_MODE, today);
@@ -94,10 +98,23 @@ const ClassicPage: React.FC = () => {
         // Récupère les guessCounts
         const counts = await fetchGuessCounts(GAME_MODE);
         setGuessCounts(counts);
-      } finally {
+        // Récupère les modes gagnés
+        await refreshWonModes();
         setLoading(false);
+      } catch (err: any) {
+        setMaintenance(true);
+        setLoading(false);
+        // On attend 3s puis on retente
+        retryTimeout = setTimeout(() => {
+          if (!cancelled) tryLoad();
+        }, 3000);
       }
-    })();
+    }
+    tryLoad();
+    return () => {
+      cancelled = true;
+      if (retryTimeout) clearTimeout(retryTimeout);
+    };
   }, []);
 
   // Récupère le nombre de gagnants au chargement et en temps réel
@@ -256,6 +273,7 @@ const ClassicPage: React.FC = () => {
         if (diff <= 0) {
           setCountdown('00:00:00');
           // Attendre que le backend ait bien fini le cron (flag explicite)
+          setMaintenance(true);
           let ready = false;
           while (!ready) {
             try {
@@ -263,6 +281,7 @@ const ClassicPage: React.FC = () => {
             } catch {}
             if (!ready) await new Promise(res => setTimeout(res, 1000));
           }
+          setMaintenance(false);
           window.location.reload();
           break;
         }
@@ -291,6 +310,13 @@ const ClassicPage: React.FC = () => {
 
   // Pour l'historique, il faut passer les objets VJLPerson :
   const guessObjects = guesses.map(id => getPersonById(id)).filter(Boolean) as VJLPerson[];
+
+  // Affichage conditionnel pendant le chargement ou maintenance
+  if (maintenance) {
+    return <div style={{color:'#ffd700',fontWeight:600,fontSize:'1.2rem',textAlign:'center',marginTop:40}}>
+      <span>Maintenance en cours…<br/>Le jeu sera disponible dès que la mise à jour quotidienne est terminée.<br/>Nouvel essai dans quelques secondes…</span>
+    </div>;
+  }
 
   if (loading || !answer) {
     return <div>Loading...</div>;
