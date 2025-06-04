@@ -5,6 +5,7 @@ import cors from 'cors';
 import { fileURLToPath } from 'url';
 import cron from 'node-cron';
 import { Client, GatewayIntentBits } from 'discord.js';
+import { exec } from 'child_process';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -29,6 +30,47 @@ let cronReady = true; // true au démarrage, false pendant le cron
 
 // --- Purge et génération du jour si besoin au démarrage ---
 async function ensureDailyPurgeAndGeneration() {
+  // 1. Fetch nouveaux messages du jour
+  let scrapOk = true;
+  try {
+    await new Promise((resolve) => {
+      exec('node ./discord/scrap-messages.js', (err, stdout, stderr) => {
+        if (stdout) process.stdout.write(stdout);
+        if (stderr) process.stderr.write(stderr);
+        if (err) {
+          console.error('[INIT] Erreur scrap-messages:', err);
+          scrapOk = false;
+        }
+        console.log('[INIT] scrap-messages terminé');
+        resolve();
+      });
+    });
+  } catch (e) {
+    console.error('[INIT] Exception scrap-messages:', e);
+    scrapOk = false;
+  }
+
+  // 2. Exécute filtrageData.js seulement si scrap-messages a réussi
+  if (scrapOk) {
+    try {
+      await new Promise((resolve) => {
+        exec('node ./discord/filtrageData.js', (err, stdout, stderr) => {
+          if (stdout) process.stdout.write(stdout);
+          if (stderr) process.stderr.write(stderr);
+          if (err) {
+            console.error('[INIT] Erreur filtrageData:', err);
+          }
+          console.log('[INIT] filtrageData terminé');
+          resolve();
+        });
+      });
+    } catch (e) {
+      console.error('[INIT] Exception filtrageData:', e);
+    }
+  } else {
+    console.error('[INIT] filtrageData non lancé car scrap-messages a échoué');
+  }
+
   const today = getAnswerDateForToday();
   const answers = readAnswers();
   const hasToday = Object.values(answers).some(a => a && a.date === today);
@@ -50,7 +92,7 @@ async function ensureDailyPurgeAndGeneration() {
 }
 
 // Appel au démarrage
-ensureDailyPurgeAndGeneration();
+await ensureDailyPurgeAndGeneration();
 
 // Route pour exposer l'état du cron
 app.get('/api/cron-ready', (req, res) => {
@@ -522,6 +564,48 @@ async function generateImageOfTheDay(today, discordUserId) {
 // Planifie une purge quotidienne à minuit Europe/Paris
 cron.schedule('0 0 * * *', async () => {
   cronReady = false; // Le cron commence
+
+  // 1. Fetch nouveaux messages du jour
+  let scrapOk = true;
+  try {
+    await new Promise((resolve) => {
+      exec('node ./discord/scrap-messages.js', (err, stdout, stderr) => {
+        if (stdout) process.stdout.write(stdout);
+        if (stderr) process.stderr.write(stderr);
+        if (err) {
+          console.error('[CRON] Erreur scrap-messages:', err);
+          scrapOk = false;
+        }
+        console.log('[CRON] scrap-messages terminé');
+        resolve();
+      });
+    });
+  } catch (e) {
+    console.error('[CRON] Exception scrap-messages:', e);
+    scrapOk = false;
+  }
+
+  // 2. Exécute filtrageData.js seulement si scrap-messages a réussi
+  if (scrapOk) {
+    try {
+      await new Promise((resolve) => {
+        exec('node ./discord/filtrageData.js', (err, stdout, stderr) => {
+          if (stdout) process.stdout.write(stdout);
+          if (stderr) process.stderr.write(stderr);
+          if (err) {
+            console.error('[CRON] Erreur filtrageData:', err);
+          }
+          console.log('[CRON] filtrageData terminé');
+          resolve();
+        });
+      });
+    } catch (e) {
+      console.error('[CRON] Exception filtrageData:', e);
+    }
+  } else {
+    console.error('[CRON] filtrageData non lancé car scrap-messages a échoué');
+  }
+
   const today = getAnswerDateForToday();
   writeGames({});
   // Utilise la liste centralisée des modes
