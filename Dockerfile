@@ -16,5 +16,5 @@ COPY --from=builder /src/src/data src/data/
 COPY --from=builder /src/discord/config.json discord/config.json
 COPY --from=builder /src/discord/attachments.json discord/attachments.json
 COPY --from=builder /src/discord/citations.json discord/citations.json
-RUN npm install --only=production
+RUN npm install --omit=dev
 CMD ["node", "backend.js"]
