@@ -145,6 +145,8 @@ client.once('ready', async () => {
 
         // Write messages to a JSON file per channel
         try {
+            // Always sort messages by timestamp ascending (oldest first)
+            messages.sort((a, b) => a.timestamp - b.timestamp);
             fs.writeFileSync(jsonFilePath, JSON.stringify(messages, null, 2), 'utf-8');
             console.log(`Messages from channel ${channel.name} have been written to ${folder_path}/${channel.name}.json`);
             console.log(`Total messages extracted for channel ${channel.name}: ${messages.length}`);
