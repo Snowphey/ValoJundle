@@ -77,7 +77,7 @@ const ClassicGuessHistory: React.FC<ClassicGuessHistoryProps> = ({ guesses, answ
                 className="card-label"
                 style={{ flex: `1 1 0`, textAlign: 'center' }}
               >
-                {attr.key === 'pfp' ? (
+                {attr.key === 'avatarUrl' ? (
                   attr.label
                 ) : (
                   <Tooltip direction="bottom" content={(() => {
@@ -126,7 +126,7 @@ const ClassicGuessHistory: React.FC<ClassicGuessHistoryProps> = ({ guesses, answ
               }}
             >
               {attributes.map((attr, i) => {
-                const delay = attr.key === 'pfp' ? 0 : (i - 1) * 500;
+                const delay = attr.key === 'avatarUrl' ? 0 : (i - 1) * 500;
                 // For the last attribute of the last guess, attach animation end handler
                 const isLastAttr = i === attributes.length - 1;
                 const handleAnimationEnd = () => {
@@ -138,7 +138,7 @@ const ClassicGuessHistory: React.FC<ClassicGuessHistoryProps> = ({ guesses, answ
                 return (
                   <div key={attr.key + '-' + guessIdx} style={{ flex: '1 1 0', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
                     {/* Ajout du compteur en haut à droite de la pfp */}
-                    {attr.key === 'pfp' && (
+                    {attr.key === 'avatarUrl' && (
                       <div style={{ position: 'absolute', top: 2, right: 20, zIndex: 2 }}>
                         <Tooltip content="Le nombre de joueurs qui ont également essayé ce membre">
                           <img src="/people.png" alt="personnes" width={20} height={20} style={{ display: 'block', margin: '0 auto' }} />
@@ -148,11 +148,12 @@ const ClassicGuessHistory: React.FC<ClassicGuessHistoryProps> = ({ guesses, answ
                     )}
                     <CardColumn
                       value={
-                        attr.key === 'pfp'
+                        attr.key === 'avatarUrl'
                           ? (
                             <img
-                              src={'pfps/' + guess.pfp}
-                              alt={guess.prenom || guess.pfp}
+                              src={guess.avatarUrl || ''}
+                              alt={guess.prenom || ''}
+                              style={{ objectFit: 'cover', background: '#222' }}
                             />
                           )
                           : Array.isArray(guess[attr.key])  
@@ -164,14 +165,14 @@ const ClassicGuessHistory: React.FC<ClassicGuessHistoryProps> = ({ guesses, answ
                           : (guess[attr.key] as string)
                       }
                       status={
-                        attr.key === 'pfp'
+                        attr.key === 'avatarUrl'
                           ? undefined
                           : getStatus(guess, answer, attr.key)
                       }
                       delay={delay}
                       showArrow={attr.key === 'height' || attr.key === 'birthDate'}
-                      isPfp={attr.key === 'pfp'}
-                      pfpName={attr.key === 'pfp' ? guess.prenom : undefined}
+                      isPfp={attr.key === 'avatarUrl'}
+                      pfpName={attr.key === 'avatarUrl' ? guess.prenom : undefined}
                       {...(isLastGuess && isLastAttr && onLastLineAnimationEnd ? { onAnimationEnd: handleAnimationEnd } : {})}
                     />
                   </div>

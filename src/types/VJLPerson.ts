@@ -1,7 +1,7 @@
 // src/types/VJLPerson.ts
 export interface VJLPerson {
   id: number;
-  pfp: string;
+  avatarUrl?: string;
   prenom: string;
   aliases?: string[];
   gender: string;

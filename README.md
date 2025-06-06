@@ -113,6 +113,29 @@ Le site sera accessible sur http://localhost:5173
 
 ## Personnalisation
 - Ajoute/modifie les membres dans `src/data/vjl.json`.
+
+Exemple de format des entrées dans `src/data/vjl.json` :
+```json
+{
+   "id": 0,
+   "prenom": "",
+   "aliases": [""],
+   "gender": "",
+   "mainRoles": [
+   ""
+   ],
+   "hairColor": "",
+   "eyeColors": [
+   ""
+   ],
+   "height": 0,
+   "option": "",
+   "birthRegion": "",
+   "birthDate": "2000-01-01",
+   "discordUserId": ""
+}
+```
+
 - Change les images dans `public/`.
 
 ## Dépendances principales

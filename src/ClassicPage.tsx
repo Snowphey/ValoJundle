@@ -13,7 +13,7 @@ import AllModesShareBox from './components/AllModesShareBox';
 import YesterdayAnswerBox from './components/YesterdayAnswerBox';
 
 const ATTRIBUTES: { key: Exclude<keyof VJLPerson, 'id'>; label: string }[] = [
-  { key: 'pfp', label: 'Membre' },
+  { key: 'avatarUrl', label: 'Membre' },
   { key: 'gender', label: 'Genre' },
   { key: 'mainRoles', label: 'Main role(s)' },
   { key: 'hairColor', label: 'Cheveux' },
@@ -350,8 +350,8 @@ const ClassicPage: React.FC = () => {
         <>
           <div ref={resultRef} style={{ margin: '32px 0 24px 0' }}>
             <VictoryBox
-              memberIcon={'pfps/' + answer.pfp}
-              memberName={answer.prenom}
+              memberIcon={answer?.avatarUrl || ''}
+              memberName={answer?.prenom}
               attempts={guessObjects.length}
               nextMode="Citation"
               nextModeImg={'next-citation.png'}

@@ -50,7 +50,7 @@ const CitationGuessHistory: React.FC<CitationGuessHistoryProps> = ({ guesses, gu
               </div>
             {/* Pfp et prénom au centre */}
             <div className="citation-guess-center">
-              <img src={'pfps/' + person.pfp} alt={person.prenom} className="citation-guess-pfp" />
+              <img src={person.avatarUrl || ''} alt={person.prenom} className="citation-guess-pfp" style={{ objectFit: 'cover', background: '#222' }} />
               <div className="citation-guess-name">{person.prenom}</div>
             </div>
           </div>

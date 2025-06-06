@@ -18,7 +18,7 @@ const YesterdayAnswerBox: React.FC<YesterdayAnswerBoxProps> = ({ yesterdayAnswer
         <span style={{color:'#4da6ff',fontWeight:700}}>
             #{answerId}
         </span>
-        <img src={'pfps/' + yesterdayAnswer.pfp} alt="" width={32} height={32} style={{borderRadius:8,verticalAlign:'middle',margin:'0 6px'}} />
+        <img src={yesterdayAnswer.avatarUrl || ''} alt={yesterdayAnswer.prenom} width={32} height={32} style={{borderRadius: 8, verticalAlign:'middle',margin:'0 6px',objectFit:'cover',background:'#222'}} />
         <span style={{color:'#7fff7f',fontWeight:700}}>{yesterdayAnswer.prenom}</span>
       </div>
     </div>

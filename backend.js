@@ -30,6 +30,9 @@ let cronReady = true; // true au démarrage, false pendant le cron
 
 // --- Purge et génération du jour si besoin au démarrage ---
 async function ensureDailyPurgeAndGeneration() {
+  // 0. Met à jour les avatars Discord
+  await updateAllDiscordAvatars();
+
   // 1. Fetch nouveaux messages du jour
   let scrapOk = true;
   try {
@@ -567,9 +570,54 @@ async function generateImageOfTheDay(today, discordUserId) {
   return 'ok';
 }
 
+// Met à jour les avatarUrl de chaque membre dans vjl.json via l'API Discord
+async function updateAllDiscordAvatars() {
+  const vjlPath = path.join(__dirname, 'src', 'data', 'vjl.json');
+  let vjl = JSON.parse(fs.readFileSync(vjlPath, 'utf8'));
+  const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+  let loginFailed = false;
+  try {
+    await new Promise((resolve) => {
+      client.once('ready', async () => {
+        try {
+          for (const member of vjl) {
+            if (member.discordUserId) {
+              try {
+                const user = await client.users.fetch(member.discordUserId);
+                member.avatarUrl = user.displayAvatarURL({ extension: 'png', size: 512 });
+              } catch (e) {
+                member.avatarUrl = member.avatarUrl || '';
+              }
+            }
+          }
+        } catch (e) {
+          console.error('[AVATAR] Erreur lors de la mise à jour des avatars:', e);
+        }
+        client.destroy();
+        resolve();
+      });
+      client.login(config.token).catch(err => {
+        loginFailed = true;
+        client.destroy();
+        resolve();
+      });
+    });
+  } catch {
+    client.destroy();
+    return 'discord_error';
+  }
+  if (loginFailed) return 'discord_error';
+  // Écriture des changements dans vjl.json
+  fs.writeFileSync(vjlPath, JSON.stringify(vjl, null, 2), 'utf8');
+  console.log("Mise à jour des avatars terminée.");
+}
+
 // Planifie une purge quotidienne à minuit Europe/Paris
 cron.schedule('0 0 * * *', async () => {
   cronReady = false; // Le cron commence
+
+  // 0. Met à jour les avatars Discord
+  await updateAllDiscordAvatars();
 
   // 1. Fetch nouveaux messages du jour
   let scrapOk = true;

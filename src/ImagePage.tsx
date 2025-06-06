@@ -394,8 +394,8 @@ const ImagePage: React.FC = () => {
             Voir sur Discord
           </a>
           <VictoryBox
-            memberIcon={'pfps/' + answer.pfp}
-            memberName={answer.prenom}
+            memberIcon={answer?.avatarUrl || ''}
+            memberName={answer?.prenom}
             attempts={guessObjects.length}
             nextMode={null} // Pas de mode suivant pour l'instant
             nextModeImg={null} // Pas d'image de mode suivant

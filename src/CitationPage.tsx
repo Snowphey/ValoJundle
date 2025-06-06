@@ -391,8 +391,8 @@ const CitationPage: React.FC = () => {
             Voir sur Discord
           </a>
           <VictoryBox
-            memberIcon={'pfps/' + answer.pfp}
-            memberName={answer.prenom}
+            memberIcon={answer?.avatarUrl || ''}
+            memberName={answer?.prenom}
             attempts={guessObjects.length}
             nextMode="Image"
             nextModeImg={'next-image.png'}

@@ -118,8 +118,8 @@ const VJLGuessInput: React.FC<VJLGuessInputProps> = ({ onGuess, mode }) => {
       {suggestions.length > 0 && (
         <ul className="suggestions-list">
           {suggestions.map((person) => (
-            <li key={person.pfp} onClick={() => handleSelect(person)}>
-              <img src={'pfps/' + person.pfp} alt={person.prenom} loading="lazy" />
+            <li key={person.avatarUrl || person.id} onClick={() => handleSelect(person)}>
+              <img src={person.avatarUrl || ''} alt={person.prenom} loading="lazy" style={{ objectFit: 'cover', background: '#222' }} />
               <span>{person.prenom}</span>
             </li>
           ))}
