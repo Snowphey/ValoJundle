@@ -186,31 +186,9 @@ function getAnswerForDay(mode, date, vjlData, createIfMissing = true) {
   }
   if (!answers[id].modes[mode]) {
     if (!createIfMissing) return null;
-    // 1. Exclure la réponse du jour précédent (tous modes)
-    // Calcul du jour précédent en Europe/Paris
-    const dateParis = getParisDateObj(new Date(date + 'T00:00:00'));
-    const prevParis = new Date(dateParis);
-    prevParis.setDate(prevParis.getDate() - 1);
-    const prevAnswerDate = `${prevParis.getFullYear()}-${(prevParis.getMonth()+1).toString().padStart(2,'0')}-${prevParis.getDate().toString().padStart(2,'0')}`;
-    let prevPersonId = null;
-    for (const prevId in answers) {
-      if (answers[prevId] && answers[prevId].date === prevAnswerDate && answers[prevId].modes && answers[prevId].modes[mode]) {
-        prevPersonId = answers[prevId].modes[mode].personId;
-        break;
-      }
-    }
-    // 2. Exclure les réponses déjà attribuées aux autres modes du jour
-    const usedToday = Object.values(answers[id].modes).map(m => m.personId);
-    // 3. Générer une réponse qui n'est ni la réponse du mode la veille ni déjà attribuée aujourd'hui
+    // Choisir n'importe qui dans vjlData, sans restriction
     let pool = vjlData.map(p => p.id);
-    let candidate = null;
-    let tries = 0;
-    do {
-      candidate = pool[Math.floor(Math.random() * pool.length)];
-      tries++;
-      // Sécurité anti-boucle infinie (au cas où tout est utilisé, on prend n'importe qui)
-      if (tries > 100) break;
-    } while ((candidate === prevPersonId) || usedToday.includes(candidate));
+    let candidate = pool[Math.floor(Math.random() * pool.length)];
     answers[id].modes[mode] = { personId: candidate };
     writeAnswers(answers);
   }
