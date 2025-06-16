@@ -103,5 +103,10 @@ export async function fetchGuessCounts(mode: string): Promise<Record<number, num
 export async function fetchImageOfTheDay(discordUserId: string) {
   const res = await fetch(`${API_URL}/image-of-the-day/${discordUserId}`);
   if (!res.ok) throw new ResponseError('Erreur récupération image du jour', res.status);
-  return await res.json();
+  const data = await res.json();
+  // On retourne aussi le chemin local si dispo
+  return {
+    ...data,
+    displayUrl: data.localPath
+  };
 }

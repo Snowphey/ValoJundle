@@ -6,6 +6,9 @@ import { fileURLToPath } from 'url';
 import cron from 'node-cron';
 import { Client, GatewayIntentBits } from 'discord.js';
 import { exec, spawn } from 'child_process';
+// Télécharge une image depuis une URL et la sauvegarde localement
+import https from 'https';
+import http from 'http';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -132,6 +135,15 @@ function getParisDateObj(date = new Date()) {
 
 function getPersonById(id) {
   return vjlData.find(p => p.id === id);
+}
+
+function getAnswerDateForYesterday() {
+  const nowParis = getParisDateObj();
+  nowParis.setDate(nowParis.getDate() - 1); // Recule d'un jour
+  const year = nowParis.getFullYear();
+  const month = (nowParis.getMonth() + 1).toString().padStart(2, '0');
+  const day = nowParis.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function getAnswerDateForToday() {
@@ -427,7 +439,7 @@ app.get('/api/image-of-the-day/:discordUserId', async (req, res) => {
     return res.status(404).json({ error: 'image_not_found' });
   }
   // Si l'image du jour n'est pas encore générée, on la génère
-  if (!answers[answerId].modes['image'].imageUrl || !answers[answerId].modes['image'].url) {
+  if (!answers[answerId].modes['image'].url) {
     const result = await generateImageOfTheDay(today, discordUserId);
     if (result !== 'ok') {
       // Erreur technique lors de la génération (ex: Discord down)
@@ -436,13 +448,19 @@ app.get('/api/image-of-the-day/:discordUserId', async (req, res) => {
     // Recharge après génération
     const refreshed = readAnswers();
     const refreshedAnswer = refreshed[answerId];
-    if (!refreshedAnswer || !refreshedAnswer.modes['image'] || !refreshedAnswer.modes['image'].imageUrl || !refreshedAnswer.modes['image'].url) {
+    if (!refreshedAnswer || !refreshedAnswer.modes['image'] ||!refreshedAnswer.modes['image'].url || !refreshedAnswer.modes['image'].localPath) {
       return res.status(500).json({ error: 'image_generation_failed' });
     }
     // On renvoie l'image générée
-    return res.json({ imageUrl: refreshedAnswer.modes['image'].imageUrl, url: refreshedAnswer.modes['image'].url });
+    return res.json({ 
+      url: refreshedAnswer.modes['image'].url,
+      localPath: refreshedAnswer.modes['image'].localPath || null
+    });
   } else {
-    return res.json({ imageUrl: answers[answerId].modes['image'].imageUrl, url: answers[answerId].modes['image'].url });
+    return res.json({ 
+      url: answers[answerId].modes['image'].url,
+      localPath: answers[answerId].modes['image'].localPath || null
+    });
   }
 });
 
@@ -542,10 +560,51 @@ async function generateImageOfTheDay(today, discordUserId) {
   }
   if (!answers[answerId].modes) answers[answerId].modes = {};
   if (!answers[answerId].modes['image']) answers[answerId].modes['image'] = {};
-  answers[answerId].modes['image'].imageUrl = imageUrl;
   answers[answerId].modes['image'].url = url;
+
+  // Nouvelle fonctionnalité : téléchargement local de l'image du jour
+  try {
+    // Avant de sauvegarder la nouvelle image, supprime tout le dossier (pour éviter les images fantômes)
+    const localDir = path.join(__dirname, 'public', 'images-of-the-day');
+    if (fs.existsSync(localDir)) {
+      const files = fs.readdirSync(localDir);
+      for (const file of files) {
+        try { fs.unlinkSync(path.join(localDir, file)); } catch {}
+      }
+    }
+    // Ensuite, télécharge l'image du jour
+    const ext = imageUrl.split('.').pop().split('?')[0].split('#')[0];
+    const localFileName = `${today}.${ext}`;
+    if (!fs.existsSync(localDir)) fs.mkdirSync(localDir, { recursive: true });
+    const localPath = path.join(localDir, localFileName);
+    await downloadImageToLocal(imageUrl, localPath);
+    answers[answerId].modes['image'].localPath = `/images-of-the-day/${localFileName}`;
+  } catch (e) {
+    console.error('[IMAGE-OF-THE-DAY] Erreur lors du téléchargement local de l\'image:', e);
+  }
+
   writeAnswers(answers);
   return 'ok';
+}
+
+async function downloadImageToLocal(url, localPath) {
+  return new Promise((resolve, reject) => {
+    const mod = url.startsWith('https') ? https : http;
+    mod.get(url, (response) => {
+      if (response.statusCode !== 200) {
+        reject(new Error('Failed to get image: ' + response.statusCode));
+        return;
+      }
+      const fileStream = fs.createWriteStream(localPath);
+      response.pipe(fileStream);
+      fileStream.on('finish', () => {
+        fileStream.close(resolve);
+      });
+      fileStream.on('error', (err) => {
+        fs.unlink(localPath, () => reject(err));
+      });
+    }).on('error', reject);
+  });
 }
 
 // Met à jour les avatarUrl de chaque membre dans vjl.json via l'API Discord

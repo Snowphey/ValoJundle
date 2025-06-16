@@ -336,7 +336,7 @@ const ImagePage: React.FC = () => {
         <div style={{ fontSize: '1.25rem', marginBottom: 8, fontWeight: 700 }}>Qui a envoyé l'image :</div>
         <div style={{ fontSize: '2rem', fontStyle: 'italic', margin: '18px 0', lineHeight: 1.4, whiteSpace: 'pre-line' }}>
           <img
-            src={image.imageUrl}
+            src={image.displayUrl}
             alt="Image du jour"
             style={{ maxWidth: 600, width: '100%', borderRadius: 12, boxShadow: '0 2px 8px #0007' }}
           />

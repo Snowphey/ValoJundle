@@ -12,6 +12,8 @@ dist
 dist-ssr
 *.local
 
+public/images-of-the-day
+
 src/data/answers.json
 src/data/games.json
 
