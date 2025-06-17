@@ -579,6 +579,7 @@ async function generateImageOfTheDay(today, discordUserId) {
     const localPath = path.join(localDir, localFileName);
     await downloadImageToLocal(imageUrl, localPath);
     answers[answerId].modes['image'].localPath = `/images-of-the-day/${localFileName}`;
+    console.log(`[IMAGE-OF-THE-DAY] Image du jour téléchargée localement à /images-of-the-day/${localFileName}`);
   } catch (e) {
     console.error('[IMAGE-OF-THE-DAY] Erreur lors du téléchargement local de l\'image:', e);
   }
@@ -711,6 +712,7 @@ cron.schedule('0 0 * * *', async () => {
   timezone: 'Europe/Paris'
 });
 
+app.use(express.static('public'));
 app.use(express.static('dist'));
 
 const server = app.listen(PORT, () => {
