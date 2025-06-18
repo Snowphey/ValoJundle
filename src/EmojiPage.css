@@ -1,0 +1,32 @@
+.emoji-revealed {
+  transition: filter 0.18s, transform 0.18s;
+  cursor: pointer;
+  display: inline-block;
+  margin: 0 2px;
+  font-family: inherit;
+  font-size: 2.5rem;
+}
+
+.emoji-revealed:hover {
+  /* Halo doré qui suit la forme de l'emoji */
+  filter: drop-shadow(0 0 8px rgb(143,143,143)) drop-shadow(0 0 2px rgb(143,143,143));
+  /* Optionnel : légère mise en avant */
+  transform: scale(1.13);
+  z-index: 2;
+}
+
+.emoji-zoom {
+  animation: emojiZoom 0.32s cubic-bezier(.7,1.7,.5,1.1);
+}
+
+@keyframes emojiZoom {
+  0% { transform: scale(1); }
+  60% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+/* Pour griser les emojis non révélés si tu veux */
+.emoji-hidden {
+  opacity: 0.7;
+  filter: grayscale(0.5);
+}

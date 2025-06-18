@@ -5,18 +5,20 @@ import './index.css'
 import ClassicPage from './ClassicPage';
 import CitationPage from './CitationPage';
 import ImagePage from './ImagePage';
-import VJLMainLayout from './VJLMainLayout';
+import MainLayout from './MainLayout';
 import { WonModesProvider } from './WonModesContext';
+import EmojiPage from './EmojiPage';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <WonModesProvider>
       <HashRouter>
         <Routes>
-          <Route path="/" element={<VJLMainLayout />}>
+          <Route path="/" element={<MainLayout />}>
             <Route path="classic" element={<ClassicPage />} />
             <Route path="citation" element={<CitationPage />} />
             <Route path="image" element={<ImagePage />} />
+            <Route path="emoji" element={<EmojiPage />} />
             <Route index element={<Navigate to="/classic" replace />} />
           </Route>
         </Routes>

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import VJLGuessInput from './components/VJLGuessInput';
+import GuessInput from './components/GuessInput';
 import ClassicGuessHistory from './components/ClassicGuessHistory';
 import ColorIndicator from './components/ColorIndicator';
 import './ValoJundleTheme.css';
@@ -326,7 +326,7 @@ const ClassicPage: React.FC = () => {
     <div>
       {/* Affiche l'input seulement si la réponse n'est pas trouvée */}
       {!hasWon && (
-        <VJLGuessInput mode={GAME_MODE} onGuess={handleGuess} />
+        <GuessInput mode={GAME_MODE} onGuess={handleGuess} />
       )}
       {/* Le compteur reste affiché même après la victoire */}
       <div style={{ textAlign: 'center', marginTop: 8, marginBottom: 18 }}>

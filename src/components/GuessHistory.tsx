@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import type { VJLPerson } from '../types/VJLPerson';
-import './CitationGuessHistory.css';
+import './GuessHistory.css';
 import { Tooltip } from './Tooltip';
 
-interface CitationGuessHistoryProps {
+interface GuessHistoryProps {
   guesses: VJLPerson[];
   guessCounts: Record<number, number>;
   lastWrongId?: number;
@@ -11,7 +11,7 @@ interface CitationGuessHistoryProps {
   answerId?: number; // id de la bonne réponse
 }
 
-const CitationGuessHistory: React.FC<CitationGuessHistoryProps> = ({ guesses, guessCounts, lastWrongId, lastCorrectId, answerId }) => {
+const GuessHistory: React.FC<GuessHistoryProps> = ({ guesses, guessCounts, lastWrongId, lastCorrectId, answerId }) => {
   const [shakeId, setShakeId] = useState<number | null>(null);
   const [tadaId, setTadaId] = useState<number | null>(null);
   useEffect(() => {
@@ -30,7 +30,7 @@ const CitationGuessHistory: React.FC<CitationGuessHistoryProps> = ({ guesses, gu
   }, [lastCorrectId]);
   if (!guesses.length) return null;
   return (
-    <div className="citation-guess-history">
+    <div className="guess-history">
       {guesses.slice().reverse().map((person) => {
         let extraClass = '';
         if (shakeId === person.id) extraClass = ' headshake';
@@ -39,19 +39,19 @@ const CitationGuessHistory: React.FC<CitationGuessHistoryProps> = ({ guesses, gu
         return (
           <div
             key={person.id}
-            className={'citation-guess-box' + extraClass}
+            className={'guess-box' + extraClass}
           >
             {/* Icône et nombre en haut à droite */}
-              <div className="citation-guess-people">
+              <div className="guess-people">
                 <Tooltip content="Le nombre de joueurs qui ont également essayé ce membre" direction='top'>
                     <img src="/people.png" alt="personnes" width={26} height={26} style={{ display: 'block', margin: '0 auto' }} />
-                    <div className="citation-guess-people-count">{guessCounts[person.id] ?? 0}</div>
+                    <div className="guess-people-count">{guessCounts[person.id] ?? 0}</div>
                 </Tooltip>
               </div>
             {/* Pfp et prénom au centre */}
-            <div className="citation-guess-center">
-              <img src={person.avatarUrl || ''} alt={person.prenom} className="citation-guess-pfp" style={{ objectFit: 'cover', background: '#222' }} />
-              <div className="citation-guess-name">{person.prenom}</div>
+            <div className="guess-center">
+              <img src={person.avatarUrl || ''} alt={person.prenom} className="guess-pfp" style={{ objectFit: 'cover', background: '#222' }} />
+              <div className="guess-name">{person.prenom}</div>
             </div>
           </div>
         );
@@ -60,4 +60,4 @@ const CitationGuessHistory: React.FC<CitationGuessHistoryProps> = ({ guesses, gu
   );
 };
 
-export default CitationGuessHistory;
+export default GuessHistory;

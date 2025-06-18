@@ -13,4 +13,5 @@ export interface VJLPerson {
   birthRegion: string;
   birthDate: string;
   discordUserId: string;
+  emojis: string[];
 }

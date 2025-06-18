@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import VJLGuessInput from './components/VJLGuessInput';
+import GuessInput from './components/GuessInput';
 import './ValoJundleTheme.css';
 import type { VJLPerson } from './types/VJLPerson';
 import VictoryBox from './components/VictoryBox';
 import AnimatedCounter from './components/AnimatedCounter';
 import { useWonModes } from './WonModesContext';
-import CitationGuessHistory from './components/CitationGuessHistory';
+import GuessHistory from './components/GuessHistory';
 import { buildShareText } from './utils/buildShareText';
 import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswer, fetchAnswerIfExists, fetchWinnersCount, getPersonById, fetchTodayFromBackend, fetchCitationOfTheDay, fetchGuessCounts, fetchCronReadyFromBackend } from './api/api';
 import AllModesShareBox from './components/AllModesShareBox';
@@ -341,7 +341,7 @@ const CitationPage: React.FC = () => {
       </div>
       {/* Input de guess */}
       {!hasWon && (
-        <VJLGuessInput mode={GAME_MODE} onGuess={handleGuess} />
+        <GuessInput mode={GAME_MODE} onGuess={handleGuess} />
       )}
       {/* Compteur de gagnants (mocké) */}
       <div style={{ textAlign: 'center', marginTop: 8, marginBottom: 18 }}>
@@ -353,7 +353,7 @@ const CitationPage: React.FC = () => {
         </span>
       </div>
       {/* Historique des guesses façon citation */}
-      <CitationGuessHistory 
+      <GuessHistory 
         guesses={guessObjects} 
         guessCounts={guessCounts} 
         lastWrongId={lastWrongId}

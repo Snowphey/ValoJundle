@@ -89,6 +89,7 @@ async function ensureDailyPurgeAndGeneration() {
     if (todayAnswer && todayAnswer.modes['citation'] && todayAnswer.modes['image']) {
       generateCitationOfTheDay(today, getPersonById(todayAnswer.modes['citation'].personId).discordUserId);
       await generateImageOfTheDay(today, getPersonById(todayAnswer.modes['image'].personId).discordUserId);
+      generateEmojisOfTheDay(today, getPersonById(todayAnswer.modes['emoji'].personId).discordUserId);
     }
     cronReady = true;
     console.log(`[INIT] Purge et génération effectuées pour la date ${today} (games.json vidé, answers du jour générées)`);
@@ -464,6 +465,77 @@ app.get('/api/image-of-the-day/:discordUserId', async (req, res) => {
   }
 });
 
+// GET /api/emojis-of-the-day/:discordUserId
+app.get('/api/emojis-of-the-day/:discordUserId', (req, res) => {
+  const { discordUserId } = req.params;
+  const answers = readAnswers();
+  const today = getAnswerDateForToday();
+  let answerId = null;
+  for (const id in answers) {
+    if (answers[id] && answers[id].date === today) {
+      answerId = id;
+      break;
+    }
+  }
+  if (!answerId || !answers[answerId].modes['emoji']) {
+    return res.status(404).json({ error: 'emoji_not_found' });
+  }
+  // Si les émojis du jour n'est pas encore généré, on les génère
+  if (!answers[answerId].modes['emoji'].emojis) {
+    generateEmojisOfTheDay(today, discordUserId);
+    // Recharge après génération
+    const refreshed = readAnswers();
+    const refreshedAnswer = refreshed[answerId];
+    if (!refreshedAnswer || !refreshedAnswer.modes['emoji'] || !refreshedAnswer.modes['emoji'].emojis) {
+      return res.status(500).json({ error: 'emoji_generation_failed' });
+    }
+    return res.json({
+      emojis: refreshedAnswer.modes['emoji'].emojis
+    });
+  }
+  // Sinon, on lit les émojis du jour pour ce userId
+  return res.json({
+    emojis: answers[answerId].modes['emoji'].emojis
+  });
+});
+
+function shuffleArray(array) {
+  // Mélange de Fisher-Yates
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+// --- Génération emoji du jour ---
+function generateEmojisOfTheDay(today, discordUserId) {
+  const person = getPersonById(
+    vjlData.find(p => p.discordUserId === discordUserId)?.id
+  );
+  if (!person || !Array.isArray(person.emojis) || person.emojis.length === 0) return;
+  // Mélange aléatoire des emojis
+  const emojis = shuffleArray(person.emojis.slice());
+
+  // Écriture dans answers.json
+  let answers = readAnswers();
+  let answerId = null;
+  for (const id in answers) {
+    if (answers[id] && answers[id].date === today) {
+      answerId = id;
+      break;
+    }
+  }
+  if (!answerId) {
+    answerId = Object.keys(answers).map(Number).filter(n => !isNaN(n)).reduce((max, n) => Math.max(max, n), 0) + 1;
+    answers[answerId] = { date: today, modes: {} };
+  }
+  if (!answers[answerId].modes) answers[answerId].modes = {};
+  if (!answers[answerId].modes['emoji']) answers[answerId].modes['emoji'] = {};
+  answers[answerId].modes['emoji'].emojis = emojis; // Stocke les emojis mélangés
+  writeAnswers(answers);
+}
+
 // --- Génération citation du jour ---
 function generateCitationOfTheDay(today, discordUserId) {
   const citationsPath = path.join(__dirname, 'discord', 'citations.json');
@@ -569,7 +641,10 @@ async function generateImageOfTheDay(today, discordUserId) {
     if (fs.existsSync(localDir)) {
       const files = fs.readdirSync(localDir);
       for (const file of files) {
-        try { fs.unlinkSync(path.join(localDir, file)); } catch {}
+        try { 
+          fs.unlinkSync(path.join(localDir, file));
+          console.log(`[IMAGE-OF-THE-DAY] Ancienne image /images-of-the-day/${file} supprimée.`);
+         } catch {}
       }
     }
     // Ensuite, télécharge l'image du jour
@@ -706,6 +781,7 @@ cron.schedule('0 0 * * *', async () => {
   const todayAnswer = answers[Object.keys(answers).find(id => answers[id].date === today)];
   generateCitationOfTheDay(today, getPersonById(todayAnswer.modes['citation'].personId).discordUserId);
   await generateImageOfTheDay(today, getPersonById(todayAnswer.modes['image'].personId).discordUserId);
+  generateEmojisOfTheDay(today, getPersonById(todayAnswer.modes['emoji'].personId).discordUserId);
   cronReady = true; // Le cron est fini, tout est prêt
   console.log(`[CRON] Purge quotidienne effectuée pour la date ${today} (games.json vidé, answers du jour générées)`);
 }, {

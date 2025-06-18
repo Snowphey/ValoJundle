@@ -1,5 +1,6 @@
 [
   { "key": "classic", "label": "Classique", "img": "classic.png", "emoji": "❓" },
   { "key": "citation", "label": "Citation", "img": "citation.png", "emoji": "💬" },
-  { "key": "image", "label": "Image", "img": "image.png", "emoji": "🖼️" }
+  { "key": "image", "label": "Image", "img": "image.png", "emoji": "🖼️" },
+  { "key": "emoji", "label": "Emoji", "img": "emoji.png", "emoji": "😀" }
 ]

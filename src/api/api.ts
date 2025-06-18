@@ -110,3 +110,10 @@ export async function fetchImageOfTheDay(discordUserId: string) {
     displayUrl: data.localPath
   };
 }
+
+// Emojis du jour (déterministe)
+export async function fetchEmojisOfTheDay(discordUserId: string): Promise<{ emojis: string[] }> {
+  const res = await fetch(`${API_URL}/emojis-of-the-day/${discordUserId}`);
+  if (!res.ok) throw new ResponseError('Erreur récupération emojis du jour', res.status);
+  return await res.json();
+}

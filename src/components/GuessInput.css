@@ -1,10 +1,10 @@
-/* VJLGuessInput.css */
-.vjl-guess-input {
+/* GuessInput.css */
+.guess-input {
   margin: 0 auto 24px auto;
   max-width: 420px;
   position: relative;
 }
-.vjl-guess-input-row {
+.guess-input-row {
   display: flex;
   align-items: center;
   position: relative;
@@ -13,7 +13,7 @@
   padding: 0;
   height: 48px;
 }
-.vjl-guess-input input {
+.guess-input input {
   padding: 0 0 0 16px;
   border: none;
   outline: none;
@@ -28,11 +28,11 @@
   border-radius: 0;
   box-shadow: none;
 }
-.vjl-guess-input input::placeholder {
+.guess-input input::placeholder {
   color: #bfc6ce;
   opacity: 1;
 }
-.vjl-guess-input button[type="submit"] { 
+.guess-input button[type="submit"] { 
   border: none;
   outline: none;
   background: url("/guess-arrow.webp");  
@@ -48,10 +48,10 @@
   box-shadow: none;
   padding: 0 18px;
 }
-.vjl-guess-input button[type="submit"]:hover {
+.guess-input button[type="submit"]:hover {
   filter: brightness(1.1);
 }
-.vjl-guess-input button[type="submit"] img {
+.guess-input button[type="submit"] img {
   display: none;
 }
 .suggestions-list {
@@ -96,19 +96,19 @@
 }
 
 @media (max-width: 600px) {
-  .vjl-guess-input {
+  .guess-input {
     max-width: 88vw;
     margin: 0 auto 12px auto;
   }
-  .vjl-guess-input-row {
+  .guess-input-row {
     height: 36px;
   }
-  .vjl-guess-input input {
+  .guess-input input {
     font-size: 0.95rem;
     height: 36px;
     padding-left: 8px;
   }
-  .vjl-guess-input button[type="submit"] {
+  .guess-input button[type="submit"] {
     font-size: 0.95rem;
     height: 36px;
     width: 48px;
@@ -121,19 +121,19 @@
 }
 
 @media (max-width: 400px) {
-  .vjl-guess-input {
+  .guess-input {
     max-width: 98vw;
     margin: 0 auto 8px auto;
   }
-  .vjl-guess-input-row {
+  .guess-input-row {
     height: 30px;
   }
-  .vjl-guess-input input {
+  .guess-input input {
     font-size: 0.85rem;
     height: 30px;
     padding-left: 4px;
   }
-  .vjl-guess-input button[type="submit"] {
+  .guess-input button[type="submit"] {
     font-size: 0.85rem;
     height: 30px;
     width: 36px;

@@ -1,118 +1,100 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import GuessInput from './components/GuessInput';
-import './ValoJundleTheme.css';
 import type { VJLPerson } from './types/VJLPerson';
 import VictoryBox from './components/VictoryBox';
 import AnimatedCounter from './components/AnimatedCounter';
 import { useWonModes } from './WonModesContext';
-import GuessHistory from './components/GuessHistory';
 import { buildShareText } from './utils/buildShareText';
-import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswer, fetchAnswerIfExists, fetchWinnersCount, getPersonById, fetchTodayFromBackend, fetchImageOfTheDay, fetchGuessCounts, fetchCronReadyFromBackend } from './api/api';
+import { 
+  loadGame as apiLoadGame, 
+  saveGame as apiSaveGame, 
+  fetchAnswer, 
+  fetchAnswerIfExists, 
+  fetchWinnersCount, 
+  getPersonById, 
+  fetchTodayFromBackend, 
+  fetchGuessCounts, 
+  fetchCronReadyFromBackend,
+  fetchEmojisOfTheDay 
+} from './api/api';
 import AllModesShareBox from './components/AllModesShareBox';
 import YesterdayAnswerBox from './components/YesterdayAnswerBox';
+import GuessHistory from './components/GuessHistory';
+import './EmojiPage.css';
 
-const GAME_MODE = 'image';
+const GAME_MODE = 'emoji';
+const REVEAL_STEPS = 3;
 
-// Contrôle de la date du puzzle (logique "Loldle")
-(function checkImageDate() {
-  const getParisDateString = () => {
-    const now = new Date();
-    const parts = new Intl.DateTimeFormat('fr-FR', {
-      timeZone: 'Europe/Paris',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour12: false
-    }).formatToParts(now);
-    const year = parts.find(p => p.type === 'year')?.value;
-    const month = parts.find(p => p.type === 'month')?.value;
-    const day = parts.find(p => p.type === 'day')?.value;
-    return `${year}-${month}-${day}`;
-  };
-  const todayParis = getParisDateString();
-  const key = 'image_last_played';
-  const lastPlayed = localStorage.getItem(key);
-  if (lastPlayed && lastPlayed !== todayParis) {
-    // Reset la partie (ici, on clear juste la clé du mode et reload)
-    Object.keys(localStorage).forEach(k => {
-      if (k.startsWith('image')) localStorage.removeItem(k);
-    });
-    localStorage.setItem(key, todayParis);
-    window.location.reload();
-  } else {
-    localStorage.setItem(key, todayParis);
-  }
-})();
-
-const ImagePage: React.FC = () => {
+const EmojiPage: React.FC = () => {
   const [answer, setAnswer] = useState<VJLPerson | null>(null);
+  const [answerId, setAnswerId] = useState<number | null>(null);
   const [guesses, setGuesses] = useState<number[]>([]);
   const [hasWon, setHasWon] = useState(false);
-  const [historyCopied, setHistoryCopied] = useState(false);
+  const [showVictoryBox, setShowVictoryBox] = useState(false);
   const [winnersCount, setWinnersCount] = useState<number>(0);
-  const [answerId, setAnswerId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [countdown, setCountdown] = useState('00:00:00');
-  const resultRef = React.useRef<HTMLDivElement>(null);
-  const { refreshWonModes } = useWonModes();
-  const [image, setImage] = useState<any | null>(null);
+  const [myRank, setMyRank] = useState<number | null>(null);
   const [guessCounts, setGuessCounts] = useState<Record<number, number>>({});
   const [lastWrongId, setLastWrongId] = useState<number | undefined>(undefined);
   const [lastCorrectId, setLastCorrectId] = useState<number | undefined>(undefined);
-  const [myRank, setMyRank] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState('00:00:00');
   const [yesterdayAnswer, setYesterdayAnswer] = useState<VJLPerson | null>(null);
   const [yesterdayAnswerId, setYesterdayAnswerId] = useState<number | null>(null);
-  const [showVictoryBox, setShowVictoryBox] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [maintenance, setMaintenance] = useState(false);
+  const [emojis, setEmojis] = useState<string[]>([]);
+  const { refreshWonModes } = useWonModes();
+  const resultRef = useRef<HTMLDivElement>(null);
+  const [historyCopied, setHistoryCopied] = useState(false);
+  const [emojiAnimIdx, setEmojiAnimIdx] = useState<number | null>(null);
 
-  // Chargement initial depuis le backend
+  // Chargement initial
   useEffect(() => {
     let cancelled = false;
     let retryTimeout: NodeJS.Timeout | null = null;
-    async function tryLoad() {
+    async function load() {
       setLoading(true);
       setMaintenance(false);
       try {
         const today = await fetchTodayFromBackend();
-        const answer = await fetchAnswer(GAME_MODE, today);
-        setAnswerId(answer.answerId);
-        const answerObj = getPersonById(answer.personId);
+        const answerData = await fetchAnswer(GAME_MODE, today);
+        setAnswerId(answerData.answerId);
+        const answerObj = getPersonById(answerData.personId);
         setAnswer(answerObj || null);
-        // Image Discord du jour (déterministe)
-        if (answerObj?.discordUserId) {
-          const img = await fetchImageOfTheDay(answerObj.discordUserId);
-          setImage(img);
+        // Ajout récupération emojis du jour
+        if (answerObj && answerObj.discordUserId) {
+          const emojiData = await fetchEmojisOfTheDay(answerObj.discordUserId);
+          setEmojis(emojiData.emojis || []);
         } else {
-          setImage(null);
+          setEmojis([]);
         }
-        // Puis charge la partie
         const state = await apiLoadGame(GAME_MODE);
         setGuesses(state.guesses || []);
         setHasWon(state.hasWon || false);
         if (typeof state.rank === 'number') setMyRank(state.rank);
-        // Ajout : si déjà gagné, afficher la VictoryBox
         if (state.hasWon) setShowVictoryBox(true);
-        // Récupère les guessCounts
         const counts = await fetchGuessCounts(GAME_MODE);
         setGuessCounts(counts);
-        // Récupère les modes gagnés
         await refreshWonModes();
         setLoading(false);
-      } catch (err: any) {
+      } catch (err) {
         setMaintenance(true);
         setLoading(false);
-        // On attend 3s puis on retente
         retryTimeout = setTimeout(() => {
-          if (!cancelled) tryLoad();
+          if (!cancelled) load();
         }, 3000);
       }
     }
-    tryLoad();
+    load();
     return () => {
       cancelled = true;
       if (retryTimeout) clearTimeout(retryTimeout);
     };
-  }, []);
+  }, [refreshWonModes]);
+
+  // Révèle plus d'emojis selon le nombre de guesses
+  useEffect(() => {
+    // On ne gère plus revealed ici, c'est emojiIdx qui fait foi
+  }, [guesses]);
 
   // Rafraîchit guessCounts en temps réel
   useEffect(() => {
@@ -142,27 +124,21 @@ const ImagePage: React.FC = () => {
     return () => { stop = true; clearInterval(interval); };
   }, []);
 
-  // Remplace handleGuess par la version ClassicPage
-  const handleGuess = useCallback(async (person: VJLPerson) => {
+  // Gestion du guess
+  const handleGuess = useCallback((person: VJLPerson) => {
     setGuesses(prevGuesses => {
       if (prevGuesses.includes(person.id)) return prevGuesses;
       const newGuesses = [...prevGuesses, person.id];
-
-      // Met à jour guessCounts en asynchrone
       fetchGuessCounts(GAME_MODE).then(setGuessCounts);
-
       if (answer && person.id === answer.id) {
         setLastCorrectId(person.id);
         setHasWon(true);
         setShowVictoryBox(false);
         setTimeout(async () => {
-          // Enregistre la victoire et récupère le rang
           const count = await fetchWinnersCount(GAME_MODE);
           setMyRank(count + 1);
           await apiSaveGame(GAME_MODE, newGuesses, true, count + 1);
           refreshWonModes();
-
-          // Confettis
           import('./confetti').then(({ default: confetti }) => {
             window.requestAnimationFrame(() => {
               confetti({
@@ -181,7 +157,6 @@ const ImagePage: React.FC = () => {
         setLastWrongId(person.id);
         apiSaveGame(GAME_MODE, newGuesses, false);
       }
-
       return newGuesses;
     });
   }, [answer, refreshWonModes]);
@@ -216,7 +191,6 @@ const ImagePage: React.FC = () => {
         const diff = next.getTime() - nowParis.getTime();
         if (diff <= 0) {
           setCountdown('00:00:00');
-          // Attendre que le backend ait bien fini le cron (flag explicite)
           setMaintenance(true);
           let ready = false;
           while (!ready) {
@@ -252,7 +226,7 @@ const ImagePage: React.FC = () => {
     }
   };
 
-  // Génère le texte à partager (simple pour l'instant)
+  // Génère le texte à partager
   function getShareText() {
     if (!answer) return '';
     return buildShareText(guessObjects, answer, [], GAME_MODE, answerId?.toString() ?? '?');
@@ -281,7 +255,7 @@ const ImagePage: React.FC = () => {
     })();
   }, []);
 
-  // Scroll vers la VictoryBox quand elle s'affiche
+  // Scroll vers la victoire
   useEffect(() => {
     if (showVictoryBox && resultRef.current) {
       resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -291,11 +265,9 @@ const ImagePage: React.FC = () => {
   // Scroll vers la victoire même après un refresh si on a gagné
   useEffect(() => {
     if (hasWon && showVictoryBox) {
-      // On lance le scroll quand le DOM est prêt
       if (resultRef.current) {
         resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
-        // Utilise MutationObserver pour attendre que le DOM soit prêt
         const observer = new MutationObserver(() => {
           if (resultRef.current) {
             resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -303,11 +275,26 @@ const ImagePage: React.FC = () => {
           }
         });
         observer.observe(document.body, { childList: true, subtree: true });
-        // Clean up
         return () => observer.disconnect();
       }
     }
   }, [hasWon, showVictoryBox]);
+
+  // Calcul du nombre d'emojis à révéler
+  const revealedCount = Math.min(emojis.length, 1 + Math.floor(guesses.length / REVEAL_STEPS));
+
+  // Animation sur nouvel emoji révélé (uniquement si revealedCount augmente)
+  const prevRevealedCount = useRef(revealedCount);
+  useEffect(() => {
+    if (emojis.length === 0) return;
+    if (revealedCount > prevRevealedCount.current) {
+      setEmojiAnimIdx(revealedCount - 1);
+      const timeout = setTimeout(() => setEmojiAnimIdx(null), 320);
+      prevRevealedCount.current = revealedCount;
+      return () => clearTimeout(timeout);
+    }
+    prevRevealedCount.current = revealedCount;
+  }, [revealedCount, emojis.length]);
 
   if (maintenance) {
     return <div style={{color:'#ffd700',fontWeight:600,fontSize:'1.2rem',textAlign:'center',marginTop:40}}>
@@ -315,11 +302,11 @@ const ImagePage: React.FC = () => {
     </div>;
   }
 
-  if (loading || !answer || !image) return <div>Chargement...</div>;
+  if (loading || !answer) return <div>Chargement...</div>;
 
   return (
     <div>
-      {/* Image box */}
+      {/* Emoji puzzle box */}
       <div style={{
         background: 'rgba(24,28,36,0.92) center/cover no-repeat',
         borderRadius: 18,
@@ -333,20 +320,30 @@ const ImagePage: React.FC = () => {
         textAlign: 'center',
         fontFamily: 'Friz Quadrata Std, Mobilo, Helvetica, Arial, sans-serif',
       }}>
-        <div style={{ fontSize: '1.25rem', marginBottom: 8, fontWeight: 700 }}>Qui a envoyé l'image :</div>
-        <div style={{ fontSize: '2rem', fontStyle: 'italic', margin: '18px 0', lineHeight: 1.4, whiteSpace: 'pre-line' }}>
-          <img
-            src={image.displayUrl}
-            alt="Image du jour"
-            style={{ maxWidth: 600, width: '100%', borderRadius: 12, boxShadow: '0 2px 8px #0007' }}
-          />
+        <div style={{ fontSize: '1.25rem', marginBottom: 8, fontWeight: 700 }}>Quel membre ces émojis décrivent-ils ?</div>
+        <div style={{ fontSize: '2.5rem', margin: '18px 0', lineHeight: 1.4, letterSpacing: 2 }}>
+          {emojis.map((e, i) => (
+            <span
+              key={i}
+              className={
+                (i === emojiAnimIdx ? 'emoji-zoom ' : '') +
+                'emoji-revealed' +
+                (i >= revealedCount ? ' emoji-hidden' : '')
+              }
+            >
+              {i < revealedCount ? e : '❔'}
+            </span>
+          ))}
+        </div>
+        <div className="emoji-info" style={{ color: '#979797', fontSize: '.9rem' }}>
+          Tous les {REVEAL_STEPS} essais se révèle un emoji.
         </div>
       </div>
       {/* Input de guess */}
       {!hasWon && (
         <GuessInput mode={GAME_MODE} onGuess={handleGuess} />
       )}
-      {/* Compteur de gagnants (mocké) */}
+      {/* Compteur de gagnants */}
       <div style={{ textAlign: 'center', marginTop: 8, marginBottom: 18 }}>
         <span style={{ color: '#f2ff7d', fontWeight: 700, fontSize: '1.1rem', letterSpacing: 1 }}>
           <AnimatedCounter value={winnersCount} direction="up" />
@@ -355,7 +352,7 @@ const ImagePage: React.FC = () => {
           {winnersCount > 1 ? 'personnes ont' : 'personne a'} trouvé !
         </span>
       </div>
-      {/* Historique des guesses façon image */}
+      {/* Historique des guesses */}
       <GuessHistory 
         guesses={guessObjects} 
         guessCounts={guessCounts} 
@@ -367,38 +364,12 @@ const ImagePage: React.FC = () => {
       {/* Victoire */}
       {hasWon && showVictoryBox && (
         <div ref={resultRef} style={{ margin: '32px 0 24px 0' }}>
-          <a
-            href={image.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="discord-link-btn"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              background: 'linear-gradient(90deg, #5865F2 60%, #404eed 100%)',
-              color: '#fff',
-              fontWeight: 600,
-              fontSize: 15,
-              borderRadius: 8,
-              padding: '7px 18px 7px 12px',
-              textDecoration: 'none',
-              boxShadow: '0 2px 8px #0005',
-              border: 'none',
-              transition: 'filter 0.15s',
-            }}
-            onMouseOver={e => (e.currentTarget.style.filter = 'brightness(1.08)')}
-            onMouseOut={e => (e.currentTarget.style.filter = '')}
-          >
-            <img src="/discord.png" alt="Discord" width={22} height={22} style={{verticalAlign:'middle', borderRadius:4}} />
-            Voir sur Discord
-          </a>
           <VictoryBox
             memberIcon={answer?.avatarUrl || ''}
             memberName={answer?.prenom}
             attempts={guessObjects.length}
-            nextMode="Emoji"
-            nextModeImg={'next-emoji.png'}
+            nextMode={null} // Pas de mode suivant pour l'instant
+            nextModeImg={null} // Pas d'image de mode suivant
             countdown={countdown}
             timezone="Europe/Paris (UTC+2)"
             rank={myRank}
@@ -420,10 +391,10 @@ const ImagePage: React.FC = () => {
       )}
       {/* Réponse d'hier tout en bas */}
       {yesterdayAnswer && yesterdayAnswerId && (
-        <YesterdayAnswerBox yesterdayAnswer={yesterdayAnswer} answerId={yesterdayAnswerId ?? undefined} />
+        <YesterdayAnswerBox yesterdayAnswer={yesterdayAnswer} answerId={yesterdayAnswerId} />
       )}
     </div>
   );
 };
 
-export default ImagePage;
+export default EmojiPage;

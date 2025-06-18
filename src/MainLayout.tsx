@@ -2,7 +2,7 @@ import { Outlet } from 'react-router-dom';
 import './ValoJundleTheme.css';
 import GameModeSelector from './GameModeSelector';
 
-const VJLMainLayout: React.FC = () => {
+const MainLayout: React.FC = () => {
   return (
     <div className="valojundle-bg">
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: 16 }}>
@@ -18,4 +18,4 @@ const VJLMainLayout: React.FC = () => {
   );
 };
 
-export default VJLMainLayout;
+export default MainLayout;

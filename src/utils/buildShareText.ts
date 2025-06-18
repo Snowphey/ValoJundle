@@ -38,6 +38,10 @@ export function buildShareText(
     return `J'ai trouvé le membre #ValoJundle #${gameNumber} avec une image en ${tries} coup${tries > 1 ? 's' : ''}${isOneShot ? ` ${oneShotEmoji}` : isEasy ? ' (facile)' : ''}  ⚔️\n\n${URL}`;
   }
 
+  if (mode === 'emoji') {
+    return `J'ai trouvé le membre #ValoJundle #${gameNumber} avec des emojis en ${tries} coup${tries > 1 ? 's' : ''}${isOneShot ? ` ${oneShotEmoji}` : isEasy ? ' (facile)' : ''}  ⚔️\n\n${URL}`;
+  }
+
   // Récupère le label du mode depuis modes.json
   const modeLabel = (modes.find(m => m.key === mode)?.label || mode);
   let text = `J'ai trouvé le membre #ValoJundle #${gameNumber} en mode ${modeLabel} en ${tries} coup${tries > 1 ? "s" : ""}${isOneShot ? ` ${oneShotEmoji}` : isEasy ? ' (facile)' : ''}  ⚔️\n`;
@@ -49,7 +53,7 @@ export function buildShareText(
     lower: '⬇️',
   };
   const getStatusEmoji = (status: CardStatus) => colorMap[status] || '⬛';
-  const shareAttributes = attributes.filter(attr => attr.key !== 'pfp');
+  const shareAttributes = attributes;
   // getStatus logic must be provided by the caller or re-implemented here
   const getStatus = (guess: VJLPerson, answer: VJLPerson, key: keyof VJLPerson): CardStatus => {
     if (key === 'height') {

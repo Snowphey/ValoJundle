@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
 import type { VJLPerson } from '../types/VJLPerson';
 import vjl from "../data/vjl.json";
-import "./VJLGuessInput.css";
+import "./GuessInput.css";
 import { loadGame } from '../api/api';
 
-interface VJLGuessInputProps {
+interface GuessInputProps {
   onGuess?: (person: VJLPerson) => void;
   mode: string;
 }
 
-const VJLGuessInput: React.FC<VJLGuessInputProps> = ({ onGuess, mode }) => {
+const GuessInput: React.FC<GuessInputProps> = ({ onGuess, mode }) => {
   const [input, setInput] = useState("");
   const [suggestions, setSuggestions] = useState<VJLPerson[]>([]);
   const [guessedPersonIds, setGuessedPersonIds] = useState<number[]>([]);
@@ -98,8 +98,8 @@ const VJLGuessInput: React.FC<VJLGuessInputProps> = ({ onGuess, mode }) => {
   };
 
   return (
-    <form className="vjl-guess-input" onSubmit={handleSubmit} autoComplete="off">
-      <div className="vjl-guess-input-row">
+    <form className="guess-input" onSubmit={handleSubmit} autoComplete="off">
+      <div className="guess-input-row">
         <input
           type="text"
           placeholder="Tape un prénom ..."
@@ -129,4 +129,4 @@ const VJLGuessInput: React.FC<VJLGuessInputProps> = ({ onGuess, mode }) => {
   );
 };
 
-export default VJLGuessInput;
+export default GuessInput;
