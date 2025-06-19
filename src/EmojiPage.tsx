@@ -281,7 +281,7 @@ const EmojiPage: React.FC = () => {
   }, [hasWon, showVictoryBox]);
 
   // Calcul du nombre d'emojis à révéler
-  const revealedCount = Math.min(emojis.length, 1 + Math.floor(guesses.length / REVEAL_STEPS));
+  const revealedCount = hasWon ? emojis.length : Math.min(emojis.length, 1 + Math.floor(guesses.length / REVEAL_STEPS));
 
   // Animation sur nouvel emoji révélé (uniquement si revealedCount augmente)
   const prevRevealedCount = useRef(revealedCount);
