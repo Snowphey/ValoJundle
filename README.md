@@ -11,6 +11,7 @@ ValoJundle est un jeu web inspiré des jeux de type "Wordle" mais adapté à la 
   - **Classique** : devine le membre mystère à partir de ses attributs (rôle, région de naissance, couleur de cheveux, etc.).
   - **Citation** : retrouve qui a écrit la citation du jour sur le Discord !
   - **Image** : retrouve qui a uploadé une image sur le Discord !
+  - **Emoji** : devine le membre à partir d'émojis le représentant !
 - **Historique des essais** et partage facile de ta performance.
 - **Classement quotidien** : vois combien de personnes ont trouvé la bonne réponse.
 
@@ -119,19 +120,24 @@ Exemple de format des entrées dans `src/data/vjl.json` :
 {
    "id": 0,
    "prenom": "",
-   "aliases": [""],
+   "aliases": [
+      ""
+   ],
    "gender": "",
    "mainRoles": [
-   ""
+      ""
    ],
    "hairColor": "",
    "eyeColors": [
-   ""
+      ""
    ],
    "height": 0,
    "option": "",
    "birthRegion": "",
    "birthDate": "2000-01-01",
+   "emojis": [
+      ""
+   ],
    "discordUserId": ""
 }
 ```
