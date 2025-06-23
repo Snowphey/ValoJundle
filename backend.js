@@ -884,7 +884,7 @@ app.get('/api/random-image', async (req, res) => {
   // Aller chercher l'URL de l'image via l'API Discord
   const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
   let imageUrl = null;
-  let displayUrl = null;
+  let url = null;
   let loginFailed = false;
   const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
   try {
@@ -899,7 +899,7 @@ app.get('/api/random-image', async (req, res) => {
               if (arr.length > 0) {
                 const chosen = arr[Math.floor(Math.random() * arr.length)];
                 imageUrl = chosen.url;
-                displayUrl = message.url;
+                url = message.url;
               }
             }
           }
@@ -919,11 +919,11 @@ app.get('/api/random-image', async (req, res) => {
   }
   if (loginFailed) return res.status(500).json({ error: 'discord_error' });
   if (!imageUrl) return res.status(404).json({ error: 'no_image_found' });
-
+  
   res.json({
-    answerId: random.id || Math.floor(Math.random()*100000),
+    answerId: random.id,
     person,
-    image: { url: imageUrl, displayUrl }
+    image: { displayUrl: imageUrl, url }
   });
 });
 
