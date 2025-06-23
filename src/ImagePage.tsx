@@ -442,7 +442,7 @@ const ImagePage: React.FC<ImagePageProps> = ({ onWin, onLose, hardcore }) => {
         </div>
       )}
       {/* Réponse d'hier tout en bas */}
-      {yesterdayAnswer && yesterdayAnswerId && (
+      {yesterdayAnswer && yesterdayAnswerId && !hardcore && (
         <YesterdayAnswerBox yesterdayAnswer={yesterdayAnswer} answerId={yesterdayAnswerId ?? undefined} />
       )}
     </div>

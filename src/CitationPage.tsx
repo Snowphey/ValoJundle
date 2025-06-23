@@ -440,7 +440,7 @@ const CitationPage: React.FC<CitationPageProps> = ({ onWin, onLose, hardcore }) 
         </div>
       )}
       {/* Réponse d'hier tout en bas */}
-      {yesterdayAnswer && yesterdayAnswerId && (
+      {yesterdayAnswer && yesterdayAnswerId && !hardcore && (
         <YesterdayAnswerBox yesterdayAnswer={yesterdayAnswer} answerId={yesterdayAnswerId} />
       )}
     </div>
