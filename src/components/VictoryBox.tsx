@@ -107,6 +107,8 @@ const VictoryBox: React.FC<VictoryBoxProps> = ({
                   <>Image<br />Avec une image du Discord</>
                 ) : nextMode.toLowerCase() === 'emoji' ? (
                   <>Emoji<br />Avec des emojis de quelqu'un</>
+                ) : nextMode.toLowerCase() === 'hardcore' ? (
+                  <>Hardcore<br />Mode compilation hardcore</>
                 ) : (
                   nextMode
                 )}

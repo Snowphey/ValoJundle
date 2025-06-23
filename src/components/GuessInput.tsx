@@ -7,9 +7,10 @@ import { loadGame } from '../api/api';
 interface GuessInputProps {
   onGuess?: (person: VJLPerson) => void;
   mode: string;
+  hardcore?: boolean;
 }
 
-const GuessInput: React.FC<GuessInputProps> = ({ onGuess, mode }) => {
+const GuessInput: React.FC<GuessInputProps> = ({ onGuess, mode, hardcore }) => {
   const [input, setInput] = useState("");
   const [suggestions, setSuggestions] = useState<VJLPerson[]>([]);
   const [guessedPersonIds, setGuessedPersonIds] = useState<number[]>([]);
@@ -19,15 +20,20 @@ const GuessInput: React.FC<GuessInputProps> = ({ onGuess, mode }) => {
     return str.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
   }
 
-  // Charger les guesses via l'API au montage
+  // Charger les guesses via l'API au montage, sauf en mode hardcore
   useEffect(() => {
-    loadGame(mode)
-      .then((state: any) => {
-        setGuessedPersonIds(state.guesses || []);
-        setLoadingGuesses(false);
-      })
-      .catch(() => setLoadingGuesses(false));
-  }, [mode]);
+    if (hardcore) {
+      setGuessedPersonIds([]);
+      setLoadingGuesses(false);
+    } else {
+      loadGame(mode)
+        .then((state: any) => {
+          setGuessedPersonIds(state.guesses || []);
+          setLoadingGuesses(false);
+        })
+        .catch(() => setLoadingGuesses(false));
+    }
+  }, [mode, hardcore]);
 
   useEffect(() => {
     if (input.length > 0) {

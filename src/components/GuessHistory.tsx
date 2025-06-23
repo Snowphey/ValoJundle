@@ -9,9 +9,10 @@ interface GuessHistoryProps {
   lastWrongId?: number;
   lastCorrectId?: number;
   answerId?: number; // id de la bonne réponse
+  hardcore?: boolean;
 }
 
-const GuessHistory: React.FC<GuessHistoryProps> = ({ guesses, guessCounts, lastWrongId, lastCorrectId, answerId }) => {
+const GuessHistory: React.FC<GuessHistoryProps> = ({ guesses, guessCounts, lastWrongId, lastCorrectId, answerId, hardcore }) => {
   const [shakeId, setShakeId] = useState<number | null>(null);
   const [tadaId, setTadaId] = useState<number | null>(null);
   useEffect(() => {
@@ -42,12 +43,14 @@ const GuessHistory: React.FC<GuessHistoryProps> = ({ guesses, guessCounts, lastW
             className={'guess-box' + extraClass}
           >
             {/* Icône et nombre en haut à droite */}
+            {!hardcore && (
               <div className="guess-people">
                 <Tooltip content="Le nombre de joueurs qui ont également essayé ce membre" direction='top'>
                     <img src="/people.png" alt="personnes" width={26} height={26} style={{ display: 'block', margin: '0 auto' }} />
                     <div className="guess-people-count">{guessCounts[person.id] ?? 0}</div>
                 </Tooltip>
               </div>
+            )}
             {/* Pfp et prénom au centre */}
             <div className="guess-center">
               <img src={person.avatarUrl || ''} alt={person.prenom} className="guess-pfp" style={{ objectFit: 'cover', background: '#222' }} />

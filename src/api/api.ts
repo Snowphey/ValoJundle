@@ -117,3 +117,48 @@ export async function fetchEmojisOfTheDay(discordUserId: string): Promise<{ emoj
   if (!res.ok) throw new ResponseError('Erreur récupération emojis du jour', res.status);
   return await res.json();
 }
+
+// Citation aléatoire (pour le mode hardcore)
+export async function fetchRandomCitation(): Promise<any> {
+  const res = await fetch(`${API_URL}/random-citation`);
+  if (!res.ok) throw new ResponseError('Erreur récupération citation aléatoire', res.status);
+  return await res.json();
+}
+
+// Image aléatoire (pour le mode hardcore)
+export async function fetchRandomImage(): Promise<any> {
+  const res = await fetch(`${API_URL}/random-image`);
+  if (!res.ok) throw new ResponseError('Erreur récupération image aléatoire', res.status);
+  return await res.json();
+}
+
+// Emojis aléatoires (pour le mode hardcore)
+export async function fetchRandomEmojis(): Promise<{ emojis: string[], answerId: number, personId: number }> {
+  const res = await fetch(`${API_URL}/random-emoji`);
+  if (!res.ok) throw new ResponseError('Erreur récupération emojis aléatoires', res.status);
+  return await res.json();
+}
+
+export type HardcoreScore = {
+  name: string;
+  score: number;
+  date: string;
+};
+
+export async function fetchHardcoreLeaderboard(): Promise<HardcoreScore[]> {
+  try {
+    const res = await fetch(`${API_URL}/hardcore-leaderboard`);
+    if (!res.ok) throw new ResponseError('Erreur leaderboard', res.status);
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
+
+export async function submitHardcoreScore(name: string, score: number) {
+  await fetch(`${API_URL}/hardcore-leaderboard`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, score }),
+  });
+}

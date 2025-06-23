@@ -15,7 +15,8 @@ import {
   fetchTodayFromBackend, 
   fetchGuessCounts, 
   fetchCronReadyFromBackend,
-  fetchEmojisOfTheDay 
+  fetchEmojisOfTheDay, 
+  fetchRandomEmojis
 } from './api/api';
 import AllModesShareBox from './components/AllModesShareBox';
 import YesterdayAnswerBox from './components/YesterdayAnswerBox';
@@ -25,7 +26,13 @@ import './EmojiPage.css';
 const GAME_MODE = 'emoji';
 const REVEAL_STEPS = 3;
 
-const EmojiPage: React.FC = () => {
+interface EmojiPageProps {
+  onWin?: () => void;
+  onLose?: () => void;
+  hardcore?: boolean;
+}
+
+const EmojiPage: React.FC<EmojiPageProps> = ({ onWin, onLose, hardcore }) => {
   const [answer, setAnswer] = useState<VJLPerson | null>(null);
   const [answerId, setAnswerId] = useState<number | null>(null);
   const [guesses, setGuesses] = useState<number[]>([]);
@@ -55,6 +62,19 @@ const EmojiPage: React.FC = () => {
       setLoading(true);
       setMaintenance(false);
       try {
+        if (hardcore) {
+          // Emojis aléatoires
+          const data = await fetchRandomEmojis();
+          setAnswerId(data.answerId);
+          setAnswer(getPersonById(data.personId) || null);
+          setEmojis(data.emojis || []);
+          setGuesses([]);
+          setHasWon(false);
+          setShowVictoryBox(false);
+          setGuessCounts({});
+          setLoading(false);
+          return;
+        }
         const today = await fetchTodayFromBackend();
         const answerData = await fetchAnswer(GAME_MODE, today);
         setAnswerId(answerData.answerId);
@@ -89,7 +109,7 @@ const EmojiPage: React.FC = () => {
       cancelled = true;
       if (retryTimeout) clearTimeout(retryTimeout);
     };
-  }, [refreshWonModes]);
+  }, [hardcore, refreshWonModes]);
 
   // Révèle plus d'emojis selon le nombre de guesses
   useEffect(() => {
@@ -135,31 +155,39 @@ const EmojiPage: React.FC = () => {
         setHasWon(true);
         setShowVictoryBox(false);
         setTimeout(async () => {
-          const count = await fetchWinnersCount(GAME_MODE);
-          setMyRank(count + 1);
-          await apiSaveGame(GAME_MODE, newGuesses, true, count + 1);
-          refreshWonModes();
-          import('./confetti').then(({ default: confetti }) => {
-            window.requestAnimationFrame(() => {
-              confetti({
-                particleCount: 180,
-                spread: 90,
-                origin: { y: 0.5 },
-                zIndex: 9999,
+          if (hardcore && onWin) {
+            onWin();
+          } else {
+            const count = await fetchWinnersCount(GAME_MODE);
+            setMyRank(count + 1);
+            await apiSaveGame(GAME_MODE, newGuesses, true, count + 1);
+            refreshWonModes();
+            import('./confetti').then(({ default: confetti }) => {
+              window.requestAnimationFrame(() => {
+                confetti({
+                  particleCount: 180,
+                  spread: 90,
+                  origin: { y: 0.5 },
+                  zIndex: 9999,
+                });
               });
+              setTimeout(() => {
+                setShowVictoryBox(true);
+              }, 1200);
             });
-            setTimeout(() => {
-              setShowVictoryBox(true);
-            }, 1200);
-          });
+          }
         }, 600);
       } else {
         setLastWrongId(person.id);
-        apiSaveGame(GAME_MODE, newGuesses, false);
+        if (hardcore && onLose) {
+          onLose();
+        } else {
+          apiSaveGame(GAME_MODE, newGuesses, false);
+        }
       }
       return newGuesses;
     });
-  }, [answer, refreshWonModes]);
+  }, [answer, onWin, onLose, hardcore, refreshWonModes]);
 
   // Chronomètre (reset à minuit Europe/Paris)
   useEffect(() => {
@@ -341,17 +369,19 @@ const EmojiPage: React.FC = () => {
       </div>
       {/* Input de guess */}
       {!hasWon && (
-        <GuessInput mode={GAME_MODE} onGuess={handleGuess} />
+        <GuessInput mode={GAME_MODE} onGuess={handleGuess} hardcore={hardcore} />
       )}
       {/* Compteur de gagnants */}
-      <div style={{ textAlign: 'center', marginTop: 8, marginBottom: 18 }}>
-        <span style={{ color: '#f2ff7d', fontWeight: 700, fontSize: '1.1rem', letterSpacing: 1 }}>
-          <AnimatedCounter value={winnersCount} direction="up" />
-        </span>
-        <span style={{ color: '#fff', fontWeight: 500, fontSize: '1.1rem', marginLeft: 6 }}>
-          {winnersCount > 1 ? 'personnes ont' : 'personne a'} trouvé !
-        </span>
-      </div>
+      {!hardcore && (
+        <div style={{ textAlign: 'center', marginTop: 8, marginBottom: 18 }}>
+          <span style={{ color: '#f2ff7d', fontWeight: 700, fontSize: '1.1rem', letterSpacing: 1 }}>
+            <AnimatedCounter value={winnersCount} direction="up" />
+          </span>
+          <span style={{ color: '#fff', fontWeight: 500, fontSize: '1.1rem', marginLeft: 6 }}>
+            {winnersCount > 1 ? 'personnes ont' : 'personne a'} trouvé !
+          </span>
+        </div>
+      )}
       {/* Historique des guesses */}
       <GuessHistory 
         guesses={guessObjects} 
@@ -359,17 +389,18 @@ const EmojiPage: React.FC = () => {
         lastWrongId={lastWrongId}
         lastCorrectId={lastCorrectId}
         answerId={answer.id}
+        hardcore={hardcore}
       />
       <div style={{ marginTop: 36 }} />
       {/* Victoire */}
-      {hasWon && showVictoryBox && (
+      {(!hardcore && hasWon && showVictoryBox) && (
         <div ref={resultRef} style={{ margin: '32px 0 24px 0' }}>
           <VictoryBox
             memberIcon={answer?.avatarUrl || ''}
             memberName={answer?.prenom}
             attempts={guessObjects.length}
-            nextMode={null} // Pas de mode suivant pour l'instant
-            nextModeImg={null} // Pas d'image de mode suivant
+            nextMode="Hardcore"
+            nextModeImg={'next-hardcore.png'}
             countdown={countdown}
             timezone="Europe/Paris (UTC+2)"
             rank={myRank}

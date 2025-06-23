@@ -57,10 +57,8 @@ export function buildShareText(
   // getStatus logic must be provided by the caller or re-implemented here
   const getStatus = (guess: VJLPerson, answer: VJLPerson, key: keyof VJLPerson): CardStatus => {
     if (key === 'height') {
-      const guessRounded = Math.round(guess.height / 10) * 10;
-      const answerRounded = Math.round(answer.height / 10) * 10;
-      if (guessRounded === answerRounded) return 'correct';
-      if (guessRounded < answerRounded) return 'higher';
+      if (guess.height === answer.height) return 'correct';
+      if (guess.height < answer.height) return 'higher';
       return 'lower';
     }
     if (key === 'birthDate') {

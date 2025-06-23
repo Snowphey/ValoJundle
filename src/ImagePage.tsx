@@ -7,7 +7,7 @@ import AnimatedCounter from './components/AnimatedCounter';
 import { useWonModes } from './WonModesContext';
 import GuessHistory from './components/GuessHistory';
 import { buildShareText } from './utils/buildShareText';
-import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswer, fetchAnswerIfExists, fetchWinnersCount, getPersonById, fetchTodayFromBackend, fetchImageOfTheDay, fetchGuessCounts, fetchCronReadyFromBackend } from './api/api';
+import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswer, fetchAnswerIfExists, fetchWinnersCount, getPersonById, fetchTodayFromBackend, fetchImageOfTheDay, fetchGuessCounts, fetchCronReadyFromBackend, fetchRandomImage } from './api/api';
 import AllModesShareBox from './components/AllModesShareBox';
 import YesterdayAnswerBox from './components/YesterdayAnswerBox';
 
@@ -44,7 +44,13 @@ const GAME_MODE = 'image';
   }
 })();
 
-const ImagePage: React.FC = () => {
+interface ImagePageProps {
+  onWin?: () => void;
+  onLose?: () => void;
+  hardcore?: boolean;
+}
+
+const ImagePage: React.FC<ImagePageProps> = ({ onWin, onLose, hardcore }) => {
   const [answer, setAnswer] = useState<VJLPerson | null>(null);
   const [guesses, setGuesses] = useState<number[]>([]);
   const [hasWon, setHasWon] = useState(false);
@@ -73,6 +79,19 @@ const ImagePage: React.FC = () => {
       setLoading(true);
       setMaintenance(false);
       try {
+        if (hardcore) {
+          // Image aléatoire
+          const data = await fetchRandomImage();
+          setAnswerId(data.answerId);
+          setAnswer(data.person || null);
+          setImage(data.image || null);
+          setGuesses([]);
+          setHasWon(false);
+          setShowVictoryBox(false);
+          setGuessCounts({});
+          setLoading(false);
+          return;
+        }
         const today = await fetchTodayFromBackend();
         const answer = await fetchAnswer(GAME_MODE, today);
         setAnswerId(answer.answerId);
@@ -112,7 +131,7 @@ const ImagePage: React.FC = () => {
       cancelled = true;
       if (retryTimeout) clearTimeout(retryTimeout);
     };
-  }, []);
+  }, [hardcore, refreshWonModes]);
 
   // Rafraîchit guessCounts en temps réel
   useEffect(() => {
@@ -147,44 +166,45 @@ const ImagePage: React.FC = () => {
     setGuesses(prevGuesses => {
       if (prevGuesses.includes(person.id)) return prevGuesses;
       const newGuesses = [...prevGuesses, person.id];
-
-      // Met à jour guessCounts en asynchrone
       fetchGuessCounts(GAME_MODE).then(setGuessCounts);
-
       if (answer && person.id === answer.id) {
         setLastCorrectId(person.id);
         setHasWon(true);
         setShowVictoryBox(false);
         setTimeout(async () => {
-          // Enregistre la victoire et récupère le rang
-          const count = await fetchWinnersCount(GAME_MODE);
-          setMyRank(count + 1);
-          await apiSaveGame(GAME_MODE, newGuesses, true, count + 1);
-          refreshWonModes();
-
-          // Confettis
-          import('./confetti').then(({ default: confetti }) => {
-            window.requestAnimationFrame(() => {
-              confetti({
-                particleCount: 180,
-                spread: 90,
-                origin: { y: 0.5 },
-                zIndex: 9999,
+          if (hardcore && onWin) {
+            onWin();
+          } else {
+            const count = await fetchWinnersCount(GAME_MODE);
+            setMyRank(count + 1);
+            await apiSaveGame(GAME_MODE, newGuesses, true, count + 1);
+            refreshWonModes();
+            import('./confetti').then(({ default: confetti }) => {
+              window.requestAnimationFrame(() => {
+                confetti({
+                  particleCount: 180,
+                  spread: 90,
+                  origin: { y: 0.5 },
+                  zIndex: 9999,
+                });
               });
+              setTimeout(() => {
+                setShowVictoryBox(true);
+              }, 1200);
             });
-            setTimeout(() => {
-              setShowVictoryBox(true);
-            }, 1200);
-          });
+          }
         }, 600);
       } else {
         setLastWrongId(person.id);
-        apiSaveGame(GAME_MODE, newGuesses, false);
+        if (hardcore && onLose) {
+          onLose();
+        } else {
+          apiSaveGame(GAME_MODE, newGuesses, false);
+        }
       }
-
       return newGuesses;
     });
-  }, [answer, refreshWonModes]);
+  }, [answer, onWin, onLose, hardcore, refreshWonModes]);
 
   // Chronomètre (reset à minuit Europe/Paris)
   useEffect(() => {
@@ -344,17 +364,19 @@ const ImagePage: React.FC = () => {
       </div>
       {/* Input de guess */}
       {!hasWon && (
-        <GuessInput mode={GAME_MODE} onGuess={handleGuess} />
+        <GuessInput mode={GAME_MODE} onGuess={handleGuess} hardcore={hardcore} />
       )}
       {/* Compteur de gagnants (mocké) */}
-      <div style={{ textAlign: 'center', marginTop: 8, marginBottom: 18 }}>
-        <span style={{ color: '#f2ff7d', fontWeight: 700, fontSize: '1.1rem', letterSpacing: 1 }}>
-          <AnimatedCounter value={winnersCount} direction="up" />
-        </span>
-        <span style={{ color: '#fff', fontWeight: 500, fontSize: '1.1rem', marginLeft: 6 }}>
-          {winnersCount > 1 ? 'personnes ont' : 'personne a'} trouvé !
-        </span>
-      </div>
+      {!hardcore && (
+        <div style={{ textAlign: 'center', marginTop: 8, marginBottom: 18 }}>
+          <span style={{ color: '#f2ff7d', fontWeight: 700, fontSize: '1.1rem', letterSpacing: 1 }}>
+            <AnimatedCounter value={winnersCount} direction="up" />
+          </span>
+          <span style={{ color: '#fff', fontWeight: 500, fontSize: '1.1rem', marginLeft: 6 }}>
+            {winnersCount > 1 ? 'personnes ont' : 'personne a'} trouvé !
+          </span>
+        </div>
+      )}
       {/* Historique des guesses façon image */}
       <GuessHistory 
         guesses={guessObjects} 
@@ -362,10 +384,11 @@ const ImagePage: React.FC = () => {
         lastWrongId={lastWrongId}
         lastCorrectId={lastCorrectId}
         answerId={answer.id}
+        hardcore={hardcore}
       />
       <div style={{ marginTop: 36 }} />
       {/* Victoire */}
-      {hasWon && showVictoryBox && (
+      {(!hardcore && hasWon && showVictoryBox) && (
         <div ref={resultRef} style={{ margin: '32px 0 24px 0' }}>
           <a
             href={image.url}

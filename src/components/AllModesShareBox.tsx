@@ -21,8 +21,11 @@ const AllModesShareBox: React.FC = () => {
     })();
   }, [wonModes]);
 
-  // Affiche uniquement si tous les modes sont validés (ordre et exhaustivité)
-  const allModesWon = modes.every(m => wonModes.includes(m.key)) && wonModes.length === modes.length;
+  // On exclut le mode "hardcore" des modes à valider et à afficher
+  const shareableModes = modes.filter(m => m.key !== 'hardcore');
+
+  // Affiche uniquement si tous les modes (hors hardcore) sont validés (ordre et exhaustivité)
+  const allModesWon = shareableModes.every(m => wonModes.includes(m.key)) && shareableModes.length === wonModes.length;
   if (!allModesWon) return null;
 
   // Ajout de l'emoji 🤯 si 1 coup dans le résumé global
@@ -30,7 +33,7 @@ const AllModesShareBox: React.FC = () => {
 
   const shareText = [
     `J'ai complété tous les modes de #ValoJundle aujourd'hui :`,
-    ...modes.map(mode => {
+    ...shareableModes.map(mode => {
       const triesCount = tries[mode.key] ?? '?';
       let suffix = '';
       if (triesCount === 1) suffix = ` ${oneShotEmoji}`;

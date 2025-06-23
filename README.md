@@ -1,17 +1,18 @@
 # ValoJundle
 
-ValoJundle est un jeu web inspiré des jeux de type "Wordle" mais adapté à la communauté VJL (Valo Jungle League). Chaque jour, tente de deviner le membre mystère ou la citation du Discord !
+ValoJundle est un jeu web inspiré des jeux de type "Wordle" mais adapté à la communauté VJL (Valo Jungle League). Chaque jour, tente de deviner des membres du serveur par rapport à différentes catégories !
 
 <p align="center" width="100%">
     <img src="https://github.com/Snowphey/ValoJundle/blob/851567866d905eba695cf09c08799f52569e13ab/public/valojundle%20logo.png" alt="valojundle_logo"/ width=700>
 </p>
 
 ## Fonctionnalités principales
-- **Quatre modes de jeu** :
+- **Cinq modes de jeu** :
   - **Classique** : devine le membre mystère à partir de ses attributs (rôle, région de naissance, couleur de cheveux, etc.).
   - **Citation** : retrouve qui a écrit la citation du jour sur le Discord !
   - **Image** : retrouve qui a uploadé une image sur le Discord !
   - **Emoji** : devine le membre à partir d'émojis le représentant !
+  - **Hardcore** : enchaîne les modes Citation, Image et Emoji aléatoirement sans perdre pour avoir le meilleur score sur le leaderboard !
 - **Historique des essais** et partage facile de ta performance.
 - **Classement quotidien** : vois combien de personnes ont trouvé la bonne réponse.
 

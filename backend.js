@@ -9,6 +9,7 @@ import { exec, spawn } from 'child_process';
 // Télécharge une image depuis une URL et la sauvegarde localement
 import https from 'https';
 import http from 'http';
+import crypto from 'crypto';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -800,4 +801,196 @@ process.on('SIGTERM', () => {
   server.close(() => {
     debug('HTTP server closed');
   });
+});
+
+// --- MODE HARDCORE : API RANDOM ---
+
+// Utilitaire pour exclure l'élément du jour
+function getRandomExcept(arr, exceptId) {
+  const filtered = arr.filter(e => e.id !== exceptId);
+  return filtered[Math.floor(Math.random() * filtered.length)];
+}
+
+// GET /api/random-citation
+app.get('/api/random-citation', (req, res) => {
+  const citationsPath = path.join(__dirname, 'discord', 'citations.json');
+  let citations = [];
+  try {
+    citations = JSON.parse(fs.readFileSync(citationsPath, 'utf8'));
+  } catch {
+    return res.status(500).json({ error: 'citations_read_error' });
+  }
+  // On récupère toutes les citations valides (avec messages)
+  const all = citations.filter(c => Array.isArray(c.messages) && c.messages.length > 0);
+  // Exclure la citation du jour
+  const today = getAnswerDateForToday();
+  const answers = readAnswers();
+  let todayCitationId = null;
+  for (const id in answers) {
+    if (answers[id] && answers[id].date === today && answers[id].modes && answers[id].modes['citation']) {
+      todayCitationId = answers[id].modes['citation'].citationIdx;
+      break;
+    }
+  }
+  const pool = todayCitationId !== null ? all.filter(c => c.id !== todayCitationId) : all;
+  if (!pool.length) return res.status(404).json({ error: 'no_random_citation' });
+  const citationObj = pool[Math.floor(Math.random() * pool.length)];
+  let person = vjlData.find(p => p.discordUserId === citationObj.userId);
+  if (!person) {
+    return res.status(404).json({ error: 'no_person_for_userId', userId: citationObj.userId });
+  }
+  // Trier les messages par timestamp croissant
+  const sortedMessages = citationObj.messages
+    .filter(m => m.content && m.content.trim().length > 0)
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  const content = sortedMessages.map(m => m.content).join('\n');
+  const url = sortedMessages[0]?.url || null;
+  res.json({
+    answerId: citationObj.id || Math.floor(Math.random()*100000),
+    person,
+    message: { content, url }
+  });
+});
+
+// GET /api/random-image
+app.get('/api/random-image', async (req, res) => {
+  const attachmentsPath = path.join(__dirname, 'discord', 'attachments.json');
+  let attachments = [];
+  try {
+    attachments = JSON.parse(fs.readFileSync(attachmentsPath, 'utf8'));
+  } catch {
+    return res.status(500).json({ error: 'attachments_read_error' });
+  }
+  // Exclure l'image du jour
+  const today = getAnswerDateForToday();
+  const answers = readAnswers();
+  let todayImageUrl = null;
+  for (const id in answers) {
+    if (answers[id] && answers[id].date === today && answers[id].modes && answers[id].modes['image']) {
+      todayImageUrl = answers[id].modes['image'].url;
+      break;
+    }
+  }
+  const pool = todayImageUrl ? attachments.filter(a => a.url !== todayImageUrl) : attachments;
+  if (!pool.length) return res.status(404).json({ error: 'no_random_image' });
+  const random = pool[Math.floor(Math.random() * pool.length)];
+  // Correction : mapping userId Discord -> VJLPerson
+  let person = vjlData.find(p => p.discordUserId === random.userId);
+  if (!person) {
+    // fallback: undefined person
+    return res.status(404).json({ error: 'no_person_for_userId', userId: random.userId });
+  }
+
+  // Aller chercher l'URL de l'image via l'API Discord
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+  let imageUrl = null;
+  let displayUrl = null;
+  let loginFailed = false;
+  const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
+  try {
+    await new Promise((resolve) => {
+      client.once('ready', async () => {
+        try {
+          const channel = await client.channels.fetch(random.channelId);
+          if (channel && channel.isTextBased()) {
+            const message = await channel.messages.fetch(random.messageId);
+            if (message.attachments && message.attachments.size > 0) {
+              const arr = Array.from(message.attachments.values()).filter(att => allowedTypes.includes(att.contentType));
+              if (arr.length > 0) {
+                const chosen = arr[Math.floor(Math.random() * arr.length)];
+                imageUrl = chosen.url;
+                displayUrl = message.url;
+              }
+            }
+          }
+        } catch (err) {}
+        client.destroy();
+        resolve();
+      });
+      client.login(config.token).catch(err => {
+        loginFailed = true;
+        client.destroy();
+        resolve();
+      });
+    });
+  } catch {
+    client.destroy();
+    return res.status(500).json({ error: 'discord_error' });
+  }
+  if (loginFailed) return res.status(500).json({ error: 'discord_error' });
+  if (!imageUrl) return res.status(404).json({ error: 'no_image_found' });
+
+  res.json({
+    answerId: random.id || Math.floor(Math.random()*100000),
+    person,
+    image: { url: imageUrl, displayUrl }
+  });
+});
+
+// GET /api/random-emoji
+app.get('/api/random-emoji', (req, res) => {
+  const answers = readAnswers();
+  const today = getAnswerDateForToday();
+  let todayEmojiId = null;
+  for (const id in answers) {
+    if (answers[id] && answers[id].date === today && answers[id].modes && answers[id].modes['emoji']) {
+      todayEmojiId = answers[id].modes['emoji'].emojiIdx;
+      break;
+    }
+  }
+  // On prend un membre au hasard qui a des emojis
+  const pool = vjlData.filter(p => Array.isArray(p.emojis) && p.emojis.length > 0);
+  if (!pool.length) return res.status(404).json({ error: 'no_random_emoji' });
+  let randomPerson = pool[Math.floor(Math.random() * pool.length)];
+  // Exclure la personne du jour si possible
+  if (todayEmojiId !== null && pool.length > 1) {
+    const todayPersonId = answers[Object.keys(answers).find(id => answers[id].date === today)]?.modes?.emoji?.personId;
+    pool.splice(pool.findIndex(p => p.id === todayPersonId), 1);
+    randomPerson = pool[Math.floor(Math.random() * pool.length)];
+  }
+  // Mélange les emojis
+  const emojis = shuffleArray(randomPerson.emojis.slice());
+  res.json({
+    answerId: randomPerson.id,
+    personId: randomPerson.id,
+    person: randomPerson,
+    emojis
+  });
+});
+
+// --- HARDCORE LEADERBOARD ---
+const HARDCORE_FILE = path.join(__dirname, 'src', 'data', 'hardcore_leaderboard.json');
+
+function readHardcoreScores() {
+  if (!fs.existsSync(HARDCORE_FILE)) return [];
+  const data = fs.readFileSync(HARDCORE_FILE, 'utf-8');
+  try {
+    return JSON.parse(data);
+  } catch {
+    return [];
+  }
+}
+
+function writeHardcoreScores(scores) {
+  fs.writeFileSync(HARDCORE_FILE, JSON.stringify(scores, null, 2));
+}
+
+// GET leaderboard
+app.get('/api/hardcore-leaderboard', (req, res) => {
+  const scores = readHardcoreScores();
+  scores.sort((a, b) => b.score - a.score || new Date(b.date) - new Date(a.date));
+  res.json(scores);
+});
+
+// POST new score
+app.post('/api/hardcore-leaderboard', (req, res) => {
+  const { name, score } = req.body;
+  if (!name || typeof score !== 'number' || !Number.isFinite(score) || score < 0) {
+    return res.status(400).json({ error: 'Invalid payload' });
+  }
+  const entry = { name, score, date: new Date().toISOString() };
+  const scores = readHardcoreScores();
+  scores.push(entry);
+  writeHardcoreScores(scores);
+  res.status(201).json(entry);
 });
