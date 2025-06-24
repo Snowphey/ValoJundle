@@ -87,10 +87,18 @@ const HardcorePage: React.FC = () => {
 
   // Leaderboard display
   const handleDownloadLeaderboard = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(leaderboard, null, 2));
+    // Format leaderboard as plain text
+    let text = '🏆 Leaderboard Hardcore\n';
+    leaderboard.forEach((entry, i) => {
+      text += `${i + 1}. ${entry.name} — ${entry.score} pts (${new Date(entry.date).toLocaleString('fr-FR', { timeZone: 'Europe/Paris' })})\n`;
+    });
+    if (leaderboard.length === 0) {
+      text += 'Aucun score enregistré\n';
+    }
+    const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(text);
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "valojundle_hardcore_leaderboard.json");
+    downloadAnchorNode.setAttribute("download", "valojundle_hardcore_leaderboard.txt");
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
