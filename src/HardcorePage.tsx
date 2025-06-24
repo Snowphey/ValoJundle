@@ -34,7 +34,7 @@ const HardcorePage: React.FC = () => {
   }, [submitted, gameOver]);
 
   const handleWin = useCallback(() => {
-    setScore(score + 1);
+    setScore(prev => prev + 1);
     // On force le changement de mode pour ne pas répéter le même deux fois de suite
     let next;
     do {
