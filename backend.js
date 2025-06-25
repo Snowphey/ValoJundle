@@ -696,6 +696,9 @@ app.get('/api/splash-of-the-day/:discordUserId', (req, res) => {
     }
   }
   if (!answerId || !answers[answerId].modes['splash']) {
+    return res.status(404).json({ error: 'splash_not_found' });
+  }
+  if (!answers[answerId].modes['splash'].startCoords) {
     generateSplashOfTheDay(today, discordUserId);
     // Recharge après génération
     const refreshed = readAnswers();
