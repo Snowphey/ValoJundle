@@ -42,6 +42,10 @@ export function buildShareText(
     return `J'ai trouvé le membre #ValoJundle #${gameNumber} avec des emojis en ${tries} coup${tries > 1 ? 's' : ''}${isOneShot ? ` ${oneShotEmoji}` : isEasy ? ' (facile)' : ''}  ⚔️\n\n${URL}`;
   }
 
+  if (mode === 'splash') {
+    return `J'ai trouvé le membre #ValoJundle #${gameNumber} avec un splash en ${tries} coup${tries > 1 ? 's' : ''}${isOneShot ? ` ${oneShotEmoji}` : isEasy ? ' (facile)' : ''}  ⚔️\n\n${URL}`;
+  }
+
   // Récupère le label du mode depuis modes.json
   const modeLabel = (modes.find(m => m.key === mode)?.label || mode);
   let text = `J'ai trouvé le membre #ValoJundle #${gameNumber} en mode ${modeLabel} en ${tries} coup${tries > 1 ? "s" : ""}${isOneShot ? ` ${oneShotEmoji}` : isEasy ? ' (facile)' : ''}  ⚔️\n`;
