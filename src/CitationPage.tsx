@@ -82,7 +82,6 @@ const CitationPage: React.FC<CitationPageProps> = ({ onWin, onLose, hardcore }) 
         if (hardcore) {
           // Citation aléatoire
           const data = await fetchRandomCitation();
-          setAnswerId(data.answerId);
           setAnswer(data.person || null);
           setMainMessage(data.message || null);
           setGuesses([]);

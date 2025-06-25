@@ -82,7 +82,6 @@ const ImagePage: React.FC<ImagePageProps> = ({ onWin, onLose, hardcore }) => {
         if (hardcore) {
           // Image aléatoire
           const data = await fetchRandomImage();
-          setAnswerId(data.answerId);
           setAnswer(data.person || null);
           setImage(data.image || null);
           setGuesses([]);

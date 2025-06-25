@@ -65,8 +65,7 @@ const EmojiPage: React.FC<EmojiPageProps> = ({ onWin, onLose, hardcore }) => {
         if (hardcore) {
           // Emojis aléatoires
           const data = await fetchRandomEmojis();
-          setAnswerId(data.answerId);
-          setAnswer(getPersonById(data.personId) || null);
+          setAnswer(data.person || null);
           setEmojis(data.emojis || []);
           setGuesses([]);
           setHasWon(false);
@@ -110,11 +109,6 @@ const EmojiPage: React.FC<EmojiPageProps> = ({ onWin, onLose, hardcore }) => {
       if (retryTimeout) clearTimeout(retryTimeout);
     };
   }, [hardcore, refreshWonModes]);
-
-  // Révèle plus d'emojis selon le nombre de guesses
-  useEffect(() => {
-    // On ne gère plus revealed ici, c'est emojiIdx qui fait foi
-  }, [guesses]);
 
   // Rafraîchit guessCounts en temps réel
   useEffect(() => {
@@ -399,8 +393,8 @@ const EmojiPage: React.FC<EmojiPageProps> = ({ onWin, onLose, hardcore }) => {
             memberIcon={answer?.avatarUrl || ''}
             memberName={answer?.prenom}
             attempts={guessObjects.length}
-            nextMode="Hardcore"
-            nextModeImg={'next-hardcore.png'}
+            nextMode="Splash"
+            nextModeImg={'next-splash.png'}
             countdown={countdown}
             timezone="Europe/Paris (UTC+2)"
             rank={myRank}

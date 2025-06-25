@@ -168,6 +168,22 @@
   border-color: #e6c559;
   outline: none;
 }
+.victory-splash-img-container {
+  display: flex;
+  justify-content: center;
+  margin: 18px 0;
+}
+
+.victory-splash-img {
+  width: 192px;
+  height: 192px;
+  object-fit: cover;
+  border: 2px solid #777777;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px #000a;
+  background: #222;
+}
+
 @media (max-width: 600px) {
   .victory-box-gradient {
     padding: 1rem;
@@ -192,6 +208,14 @@
   }
   .victory-next-mode-row {
     gap: 0.5rem;
+  }
+  .victory-splash-img {
+    width: 120px;
+    height: 120px;
+    border-radius: 12px;
+  }
+  .victory-splash-img-container {
+    margin: 12px 0;
   }
 }
 @media (max-width: 400px) {
@@ -232,5 +256,13 @@
   .victory-history-copy-btn {
     font-size: 0.7rem;
     padding: 4px 8px;
+  }
+  .victory-splash-img {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+  }
+  .victory-splash-img-container {
+    margin: 8px 0;
   }
 }

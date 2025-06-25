@@ -13,6 +13,7 @@ interface VictoryBoxProps {
   countdown: string;
   timezone: string;
   rank?: number | null; // Ajout du rang
+  splashImg?: string; // Ajout de l'image splash en grand
 }
 
 const VictoryBox: React.FC<VictoryBoxProps> = ({
@@ -24,6 +25,7 @@ const VictoryBox: React.FC<VictoryBoxProps> = ({
   countdown,
   timezone,
   rank,
+  splashImg,
 }) => {
   const navigate = useNavigate();
 
@@ -65,6 +67,16 @@ const VictoryBox: React.FC<VictoryBoxProps> = ({
         </div>
       )}
       <div className="victory-attempts">Nombre d'essais : <span style={{color: "#09cae6"}}>{attempts}</span></div>
+      {/* Affichage de l'image splash en grand */}
+      {splashImg && (
+        <div className="victory-splash-img-container">
+          <img
+            src={splashImg}
+            alt="Splash à deviner"
+            className="victory-splash-img"
+          />
+        </div>
+      )}
       <div className="victory-next">Le prochain membre est dans</div>
       <div className="victory-countdown">
         {/* Utilise 6 AnimatedCounter pour chaque chiffre du countdown */}
@@ -107,6 +119,8 @@ const VictoryBox: React.FC<VictoryBoxProps> = ({
                   <>Image<br />Avec une image du Discord</>
                 ) : nextMode.toLowerCase() === 'emoji' ? (
                   <>Emoji<br />Avec des emojis de quelqu'un</>
+                ) : nextMode.toLowerCase() === 'splash' ? (
+                  <>Splash<br />Avec l'avatar de quelqu'un</>
                 ) : nextMode.toLowerCase() === 'hardcore' ? (
                   <>Hardcore<br />Mode compilation hardcore</>
                 ) : (

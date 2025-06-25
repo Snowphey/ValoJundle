@@ -85,17 +85,17 @@ export async function fetchCronReadyFromBackend(): Promise<boolean> {
   return !!data.ready;
 }
 
-// Citation du jour (déterministe)
-export async function fetchCitationOfTheDay(discordUserId: string) {
-  const res = await fetch(`${API_URL}/citation-of-the-day/${discordUserId}`);
-  if (!res.ok) throw new ResponseError('Erreur récupération citation du jour', res.status);
-  return await res.json();
-}
-
 // Nombre de guesses pour chaque id (Citation ou Classic ou Image)
 export async function fetchGuessCounts(mode: string): Promise<Record<number, number>> {
   const res = await fetch(`${API_URL}/guess-counts/${mode}`);
   if (!res.ok) throw new ResponseError('Erreur récupération compteur de guesses', res.status);
+  return await res.json();
+}
+
+// Citation du jour (déterministe)
+export async function fetchCitationOfTheDay(discordUserId: string) {
+  const res = await fetch(`${API_URL}/citation-of-the-day/${discordUserId}`);
+  if (!res.ok) throw new ResponseError('Erreur récupération citation du jour', res.status);
   return await res.json();
 }
 
@@ -118,6 +118,13 @@ export async function fetchEmojisOfTheDay(discordUserId: string): Promise<{ emoj
   return await res.json();
 }
 
+// Splash du jour (déterministe)
+export async function fetchSplashOfTheDay(discordUserId: string): Promise<{ person: VJLPerson, startCoords: { x: number, y: number, zoom: number } }> {
+  const res = await fetch(`${API_URL}/splash-of-the-day/${discordUserId}`);
+  if (!res.ok) throw new ResponseError('Erreur récupération splash du jour', res.status);
+  return await res.json();
+}
+
 // Citation aléatoire (pour le mode hardcore)
 export async function fetchRandomCitation(): Promise<any> {
   const res = await fetch(`${API_URL}/random-citation`);
@@ -133,10 +140,18 @@ export async function fetchRandomImage(): Promise<any> {
 }
 
 // Emojis aléatoires (pour le mode hardcore)
-export async function fetchRandomEmojis(): Promise<{ emojis: string[], answerId: number, personId: number }> {
+export async function fetchRandomEmojis(): Promise<{ emojis: string[], person: VJLPerson }> {
   const res = await fetch(`${API_URL}/random-emoji`);
   if (!res.ok) throw new ResponseError('Erreur récupération emojis aléatoires', res.status);
   return await res.json();
+}
+
+// Splash aléatoire (pour le mode hardcore, version backend)
+export async function fetchRandomSplash(): Promise<{ person: VJLPerson, startCoords: { x: number, y: number, zoom: number } }> {
+  const res = await fetch(`${API_URL}/random-splash`);
+  if (!res.ok) throw new ResponseError('Erreur récupération splash aléatoire', res.status);
+  const data = await res.json();
+  return data;
 }
 
 export type HardcoreScore = {

@@ -9,6 +9,7 @@ import MainLayout from './MainLayout';
 import { WonModesProvider } from './WonModesContext';
 import EmojiPage from './EmojiPage';
 import HardcorePage from './HardcorePage';
+import SplashPage from './SplashPage';
 
 createRoot(document.getElementById('root')!).render(
     <WonModesProvider>
@@ -19,6 +20,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="citation" element={<CitationPage hardcore={false} />} />
             <Route path="image" element={<ImagePage hardcore={false} />} />
             <Route path="emoji" element={<EmojiPage hardcore={false} />} />
+            <Route path="splash" element={<SplashPage hardcore={false} />} />
             <Route path="hardcore" element={<HardcorePage />} />
             <Route index element={<Navigate to="/classic" replace />} />
           </Route>

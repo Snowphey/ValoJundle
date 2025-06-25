@@ -7,11 +7,12 @@ ValoJundle est un jeu web inspiré des jeux de type "Wordle" mais adapté à la 
 </p>
 
 ## Fonctionnalités principales
-- **Cinq modes de jeu** :
+- **Six modes de jeu** :
   - **Classique** : devine le membre mystère à partir de ses attributs (rôle, région de naissance, couleur de cheveux, etc.).
   - **Citation** : retrouve qui a écrit la citation du jour sur le Discord !
   - **Image** : retrouve qui a uploadé une image sur le Discord !
   - **Emoji** : devine le membre à partir d'émojis le représentant !
+  - **Splash** : retrouve le membre à partir de son avatar !
   - **Hardcore** : enchaîne les modes Citation, Image et Emoji aléatoirement sans perdre pour avoir le meilleur score sur le leaderboard !
 - **Historique des essais** et partage facile de ta performance.
 - **Classement quotidien** : vois combien de personnes ont trouvé la bonne réponse.

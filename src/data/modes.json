@@ -3,5 +3,6 @@
   { "key": "citation", "label": "Citation", "img": "citation.png", "emoji": "💬" },
   { "key": "image", "label": "Image", "img": "image.png", "emoji": "🖼️" },
   { "key": "emoji", "label": "Emoji", "img": "emoji.png", "emoji": "😀" },
+  { "key": "splash", "label": "Splash", "img": "splash.png", "emoji": "🌊" },
   { "key": "hardcore", "label": "Hardcore", "img": "hardcore.png", "emoji": "💀" }
 ]

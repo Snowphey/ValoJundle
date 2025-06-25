@@ -22,7 +22,8 @@ const DATA_FILE = path.join(__dirname, 'src', 'data', 'games.json');
 // --- LOGIQUE DE REPONSE DU JOUR ET GESTION DES IDS ---
 const ANSWERS_FILE = path.join(__dirname, 'src', 'data', 'answers.json');
 
-const modes = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'modes.json'), 'utf8'));
+var modes = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'modes.json'), 'utf8'));
+modes = modes.filter(m => m.key !== 'hardcore'); // On retire hardcore car géré différemment
 
 const vjlData = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'vjl.json'), 'utf8'));
 
@@ -87,10 +88,15 @@ async function ensureDailyPurgeAndGeneration() {
     }
     const refreshed = readAnswers();
     const todayAnswer = refreshed[Object.keys(refreshed).find(id => refreshed[id].date === today)];
-    if (todayAnswer && todayAnswer.modes['citation'] && todayAnswer.modes['image']) {
+    if (todayAnswer 
+      && todayAnswer.modes['citation'] 
+      && todayAnswer.modes['image']
+      && todayAnswer.modes['emoji']
+      && todayAnswer.modes['splash']) {
       generateCitationOfTheDay(today, getPersonById(todayAnswer.modes['citation'].personId).discordUserId);
       await generateImageOfTheDay(today, getPersonById(todayAnswer.modes['image'].personId).discordUserId);
       generateEmojisOfTheDay(today, getPersonById(todayAnswer.modes['emoji'].personId).discordUserId);
+      generateSplashOfTheDay(today, getPersonById(todayAnswer.modes['splash'].personId).discordUserId);
     }
     cronReady = true;
     console.log(`[INIT] Purge et génération effectuées pour la date ${today} (games.json vidé, answers du jour générées)`);
@@ -137,15 +143,6 @@ function getParisDateObj(date = new Date()) {
 
 function getPersonById(id) {
   return vjlData.find(p => p.id === id);
-}
-
-function getAnswerDateForYesterday() {
-  const nowParis = getParisDateObj();
-  nowParis.setDate(nowParis.getDate() - 1); // Recule d'un jour
-  const year = nowParis.getFullYear();
-  const month = (nowParis.getMonth() + 1).toString().padStart(2, '0');
-  const day = nowParis.getDate().toString().padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }
 
 function getAnswerDateForToday() {
@@ -684,6 +681,74 @@ async function downloadImageToLocal(url, localPath) {
   });
 }
 
+
+
+// GET /api/splash-of-the-day/:discordUserId
+app.get('/api/splash-of-the-day/:discordUserId', (req, res) => {
+  const { discordUserId } = req.params;
+  const today = getAnswerDateForToday();
+  let answers = readAnswers();
+  let answerId = null;
+  for (const id in answers) {
+    if (answers[id] && answers[id].date === today) {
+      answerId = id;
+      break;
+    }
+  }
+  if (!answerId || !answers[answerId].modes['splash']) {
+    generateSplashOfTheDay(today, discordUserId);
+    // Recharge après génération
+    const refreshed = readAnswers();
+    const refreshedAnswer = refreshed[answerId];
+    if (!refreshedAnswer || !refreshedAnswer.modes['splash']) {
+      return res.status(500).json({ error: 'splash_generation_failed' });
+    }
+    const person = getPersonById(refreshedAnswer.modes['splash'].personId);
+    const startCoords = refreshedAnswer.modes['splash'].startCoords;
+    if (!person || !person.avatarUrl) return res.status(404).json({ error: 'no_avatar' });
+    return res.json({
+      person,
+      startCoords
+    });
+  }
+  // Sinon, on lit le splash du jour pour ce userId
+  const person = getPersonById(answers[answerId].modes['splash'].personId);
+  const startCoords = answers[answerId].modes['splash'].startCoords;
+  if (!person || !person.avatarUrl) return res.status(404).json({ error: 'no_avatar' });
+  return res.json({
+    person,
+    startCoords
+  });
+});
+
+// --- Génération splash du jour ---
+function generateSplashOfTheDay(today, discordUserId) {
+  // On prend le membre correspondant à discordUserId avec avatar
+  const found = vjlData.find(p => p.discordUserId === discordUserId && p.avatarUrl && p.avatarUrl.length > 0);
+  if (!found) return;
+  // Génère des coordonnées de départ aléatoires (x, y entre 0 et 1, zoom initial entre 3 et 3.5)
+  const startCoords = {
+    x: Math.random(),
+    y: Math.random(),
+    zoom: 10 + Math.random() * 0.5
+  };
+  let answers = readAnswers();
+  let answerId = null;
+  for (const id in answers) {
+    if (answers[id] && answers[id].date === today) {
+      answerId = id;
+      break;
+    }
+  }
+  if (!answerId) {
+    answerId = Object.keys(answers).map(Number).filter(n => !isNaN(n)).reduce((max, n) => Math.max(max, n), 0) + 1;
+    answers[answerId] = { date: today, modes: {} };
+  }
+  if (!answers[answerId].modes) answers[answerId].modes = {};
+  answers[answerId].modes['splash'] = { personId: found.id, startCoords };
+  writeAnswers(answers);
+}
+
 // Met à jour les avatarUrl de chaque membre dans vjl.json via l'API Discord
 async function updateAllDiscordAvatars() {
   const vjlPath = path.join(__dirname, 'src', 'data', 'vjl.json');
@@ -783,6 +848,7 @@ cron.schedule('0 0 * * *', async () => {
   generateCitationOfTheDay(today, getPersonById(todayAnswer.modes['citation'].personId).discordUserId);
   await generateImageOfTheDay(today, getPersonById(todayAnswer.modes['image'].personId).discordUserId);
   generateEmojisOfTheDay(today, getPersonById(todayAnswer.modes['emoji'].personId).discordUserId);
+  generateSplashOfTheDay(today, getPersonById(todayAnswer.modes['splash'].personId).discordUserId);
   cronReady = true; // Le cron est fini, tout est prêt
   console.log(`[CRON] Purge quotidienne effectuée pour la date ${today} (games.json vidé, answers du jour générées)`);
 }, {
@@ -805,11 +871,6 @@ process.on('SIGTERM', () => {
 
 // --- MODE HARDCORE : API RANDOM ---
 
-// Utilitaire pour exclure l'élément du jour
-function getRandomExcept(arr, exceptId) {
-  const filtered = arr.filter(e => e.id !== exceptId);
-  return filtered[Math.floor(Math.random() * filtered.length)];
-}
 
 // GET /api/random-citation
 app.get('/api/random-citation', (req, res) => {
@@ -822,17 +883,7 @@ app.get('/api/random-citation', (req, res) => {
   }
   // On récupère toutes les citations valides (avec messages)
   const all = citations.filter(c => Array.isArray(c.messages) && c.messages.length > 0);
-  // Exclure la citation du jour
-  const today = getAnswerDateForToday();
-  const answers = readAnswers();
-  let todayCitationId = null;
-  for (const id in answers) {
-    if (answers[id] && answers[id].date === today && answers[id].modes && answers[id].modes['citation']) {
-      todayCitationId = answers[id].modes['citation'].citationIdx;
-      break;
-    }
-  }
-  const pool = todayCitationId !== null ? all.filter(c => c.id !== todayCitationId) : all;
+  const pool = all;
   if (!pool.length) return res.status(404).json({ error: 'no_random_citation' });
   const citationObj = pool[Math.floor(Math.random() * pool.length)];
   let person = vjlData.find(p => p.discordUserId === citationObj.userId);
@@ -846,7 +897,6 @@ app.get('/api/random-citation', (req, res) => {
   const content = sortedMessages.map(m => m.content).join('\n');
   const url = sortedMessages[0]?.url || null;
   res.json({
-    answerId: citationObj.id || Math.floor(Math.random()*100000),
     person,
     message: { content, url }
   });
@@ -861,17 +911,7 @@ app.get('/api/random-image', async (req, res) => {
   } catch {
     return res.status(500).json({ error: 'attachments_read_error' });
   }
-  // Exclure l'image du jour
-  const today = getAnswerDateForToday();
-  const answers = readAnswers();
-  let todayImageUrl = null;
-  for (const id in answers) {
-    if (answers[id] && answers[id].date === today && answers[id].modes && answers[id].modes['image']) {
-      todayImageUrl = answers[id].modes['image'].url;
-      break;
-    }
-  }
-  const pool = todayImageUrl ? attachments.filter(a => a.url !== todayImageUrl) : attachments;
+  const pool = attachments;
   if (!pool.length) return res.status(404).json({ error: 'no_random_image' });
   const random = pool[Math.floor(Math.random() * pool.length)];
   // Correction : mapping userId Discord -> VJLPerson
@@ -921,7 +961,6 @@ app.get('/api/random-image', async (req, res) => {
   if (!imageUrl) return res.status(404).json({ error: 'no_image_found' });
   
   res.json({
-    answerId: random.id,
     person,
     image: { displayUrl: imageUrl, url }
   });
@@ -931,30 +970,34 @@ app.get('/api/random-image', async (req, res) => {
 app.get('/api/random-emoji', (req, res) => {
   const answers = readAnswers();
   const today = getAnswerDateForToday();
-  let todayEmojiId = null;
-  for (const id in answers) {
-    if (answers[id] && answers[id].date === today && answers[id].modes && answers[id].modes['emoji']) {
-      todayEmojiId = answers[id].modes['emoji'].emojiIdx;
-      break;
-    }
-  }
   // On prend un membre au hasard qui a des emojis
   const pool = vjlData.filter(p => Array.isArray(p.emojis) && p.emojis.length > 0);
   if (!pool.length) return res.status(404).json({ error: 'no_random_emoji' });
   let randomPerson = pool[Math.floor(Math.random() * pool.length)];
-  // Exclure la personne du jour si possible
-  if (todayEmojiId !== null && pool.length > 1) {
-    const todayPersonId = answers[Object.keys(answers).find(id => answers[id].date === today)]?.modes?.emoji?.personId;
-    pool.splice(pool.findIndex(p => p.id === todayPersonId), 1);
-    randomPerson = pool[Math.floor(Math.random() * pool.length)];
-  }
   // Mélange les emojis
   const emojis = shuffleArray(randomPerson.emojis.slice());
   res.json({
-    answerId: randomPerson.id,
-    personId: randomPerson.id,
     person: randomPerson,
     emojis
+  });
+});
+
+// GET /api/random-splash
+app.get('/api/random-splash', (req, res) => {
+  // Tire un membre au hasard avec avatar
+  const pool = vjlData.filter(p => p.avatarUrl && p.avatarUrl.length > 0);
+  if (!pool.length) return res.status(404).json({ error: 'no_avatar' });
+  const randomPerson = pool[Math.floor(Math.random() * pool.length)];
+  // Génère des coordonnées de départ aléatoires (x, y entre 0 et 1, zoom initial entre 10 et 10.5)
+  const startCoords = {
+    x: Math.random(),
+    y: Math.random(),
+    zoom: 10 + Math.random() * 0.5
+  };
+  // Réponse au même format que les autres randoms, mais avec startCoords
+  res.json({
+    person: randomPerson,
+    startCoords
   });
 });
 
