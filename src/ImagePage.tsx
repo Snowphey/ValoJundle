@@ -416,7 +416,7 @@ const ImagePage: React.FC<ImagePageProps> = ({ onWin, onLose, hardcore }) => {
             Voir sur Discord
           </a>
           <VictoryBox
-            memberIcon={answer?.avatarUrl || ''}
+            memberIcon={answer?.avatarUrl ? `${answer.avatarUrl}?v=${new Date().toISOString().slice(0,10)}` : ''}
             memberName={answer?.prenom}
             attempts={guessObjects.length}
             nextMode="Emoji"

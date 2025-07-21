@@ -53,7 +53,7 @@ const GuessHistory: React.FC<GuessHistoryProps> = ({ guesses, guessCounts, lastW
             )}
             {/* Pfp et prénom au centre */}
             <div className="guess-center">
-              <img src={person.avatarUrl || ''} alt={person.prenom} className="guess-pfp" style={{ objectFit: 'cover', background: '#222' }} />
+              <img src={person.avatarUrl ? `${person.avatarUrl}?v=${new Date().toISOString().slice(0,10)}` : ''} alt={person.prenom} className="guess-pfp" style={{ objectFit: 'cover', background: '#222' }} />
               <div className="guess-name">{person.prenom}</div>
             </div>
           </div>

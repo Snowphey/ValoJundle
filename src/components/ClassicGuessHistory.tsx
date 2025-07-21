@@ -151,7 +151,7 @@ const ClassicGuessHistory: React.FC<ClassicGuessHistoryProps> = ({ guesses, answ
                         attr.key === 'avatarUrl'
                           ? (
                             <img
-                              src={guess.avatarUrl || ''}
+                              src={guess.avatarUrl ? `${guess.avatarUrl}?v=${new Date().toISOString().slice(0,10)}` : ''}
                               alt={guess.prenom || ''}
                               style={{ objectFit: 'cover', background: '#222' }}
                             />

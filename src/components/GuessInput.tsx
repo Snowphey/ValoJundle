@@ -125,7 +125,7 @@ const GuessInput: React.FC<GuessInputProps> = ({ onGuess, mode, hardcore }) => {
         <ul className="suggestions-list">
           {suggestions.map((person) => (
             <li key={person.avatarUrl || person.id} onClick={() => handleSelect(person)}>
-              <img src={person.avatarUrl || ''} alt={person.prenom} loading="lazy" style={{ objectFit: 'cover', background: '#222' }} />
+              <img src={person.avatarUrl ? `${person.avatarUrl}?v=${new Date().toISOString().slice(0,10)}` : ''} alt={person.prenom} loading="lazy" style={{ objectFit: 'cover', background: '#222' }} />
               <span>{person.prenom}</span>
             </li>
           ))}

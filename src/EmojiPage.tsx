@@ -390,7 +390,7 @@ const EmojiPage: React.FC<EmojiPageProps> = ({ onWin, onLose, hardcore }) => {
       {(!hardcore && hasWon && showVictoryBox) && (
         <div ref={resultRef} style={{ margin: '32px 0 24px 0' }}>
           <VictoryBox
-            memberIcon={answer?.avatarUrl || ''}
+            memberIcon={answer?.avatarUrl ? `${answer.avatarUrl}?v=${new Date().toISOString().slice(0,10)}` : ''}
             memberName={answer?.prenom}
             attempts={guessObjects.length}
             nextMode="Splash"
