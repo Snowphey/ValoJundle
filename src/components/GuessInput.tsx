@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { VJLPerson } from '../types/VJLPerson';
 import vjl from "../data/vjl.json";
 import "./GuessInput.css";
@@ -15,6 +15,18 @@ const GuessInput: React.FC<GuessInputProps> = ({ onGuess, mode, hardcore }) => {
   const [suggestions, setSuggestions] = useState<VJLPerson[]>([]);
   const [guessedPersonIds, setGuessedPersonIds] = useState<number[]>([]);
   const [loadingGuesses, setLoadingGuesses] = useState(true);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // Focus automatique sur l'input après chargement (corrige les soucis d'autoFocus natif)
+  useEffect(() => {
+    if (!loadingGuesses && inputRef.current) {
+      inputRef.current.focus();
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 50);
+    }
+  }, [loadingGuesses]);
 
   function normalize(str: string) {
     return str.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
@@ -107,6 +119,7 @@ const GuessInput: React.FC<GuessInputProps> = ({ onGuess, mode, hardcore }) => {
     <form className="guess-input" onSubmit={handleSubmit} autoComplete="off">
       <div className="guess-input-row">
         <input
+          ref={inputRef}
           type="text"
           placeholder="Tape un prénom ..."
           value={input}
