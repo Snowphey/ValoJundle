@@ -4,10 +4,11 @@ import './ValoJundleTheme.css';
 import type { VJLPerson } from './types/VJLPerson';
 import VictoryBox from './components/VictoryBox';
 import AnimatedCounter from './components/AnimatedCounter';
-import { useWonModes } from './WonModesContext';
+import { useWonModes } from './context/WonModesContext';
+import { useVJLData } from './context/VJLDataContext';
 import GuessHistory from './components/GuessHistory';
 import { buildShareText } from './utils/buildShareText';
-import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswer, fetchAnswerIfExists, fetchWinnersCount, getPersonById, fetchTodayFromBackend, fetchCitationOfTheDay, fetchGuessCounts, fetchCronReadyFromBackend, fetchRandomCitation } from './api/api';
+import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswer, fetchAnswerIfExists, fetchWinnersCount, fetchTodayFromBackend, fetchCitationOfTheDay, fetchGuessCounts, fetchCronReadyFromBackend, fetchRandomCitation } from './api/api';
 import AllModesShareBox from './components/AllModesShareBox';
 import YesterdayAnswerBox from './components/YesterdayAnswerBox';
 
@@ -70,9 +71,11 @@ const CitationPage: React.FC<CitationPageProps> = ({ onWin, onLose, hardcore }) 
   const [yesterdayAnswerId, setYesterdayAnswerId] = useState<number | null>(null);
   const [showVictoryBox, setShowVictoryBox] = useState(false);
   const [maintenance, setMaintenance] = useState(false);
+  const { vjlData, loading: loadingVJLData, error } = useVJLData();
 
   // Chargement initial depuis le backend
   useEffect(() => {
+    if (loadingVJLData || error || vjlData.length === 0) return;
     let cancelled = false;
     let retryTimeout: NodeJS.Timeout | null = null;
     async function tryLoad() {
@@ -94,7 +97,7 @@ const CitationPage: React.FC<CitationPageProps> = ({ onWin, onLose, hardcore }) 
         const today = await fetchTodayFromBackend();
         const answer = await fetchAnswer(GAME_MODE, today);
         setAnswerId(answer.answerId);
-        const answerObj = getPersonById(answer.personId);
+        const answerObj = vjlData.find(p => p.id == answer.personId);
         setAnswer(answerObj || null);
         // Citation Discord du jour (déterministe)
         if (answerObj?.discordUserId) {
@@ -130,7 +133,7 @@ const CitationPage: React.FC<CitationPageProps> = ({ onWin, onLose, hardcore }) 
       cancelled = true;
       if (retryTimeout) clearTimeout(retryTimeout);
     };
-  }, [hardcore, refreshWonModes]);
+  }, [hardcore, refreshWonModes, vjlData, loadingVJLData, error]);
 
   // Rafraîchit guessCounts en temps réel
   useEffect(() => {
@@ -279,10 +282,11 @@ const CitationPage: React.FC<CitationPageProps> = ({ onWin, onLose, hardcore }) 
   }
 
   // Pour l'affichage des guesses
-  const guessObjects = guesses.map(id => getPersonById(id)).filter(Boolean) as VJLPerson[];
+  const guessObjects = guesses.map(id => vjlData.find(p => p.id == id)).filter(Boolean) as VJLPerson[];
 
   // Récupère la réponse d'hier au chargement
   useEffect(() => {
+    if (loadingVJLData || error || vjlData.length === 0) return;
     (async () => {
       const today = await fetchTodayFromBackend();
       const todayDate = new Date(today);
@@ -292,14 +296,14 @@ const CitationPage: React.FC<CitationPageProps> = ({ onWin, onLose, hardcore }) 
       const yAnswerData = await fetchAnswerIfExists(GAME_MODE, yDate);
       if (yAnswerData && typeof yAnswerData.personId !== 'undefined') {
         setYesterdayAnswerId(yAnswerData.answerId);
-        const yAnswerObj = getPersonById(yAnswerData.personId);
+        const yAnswerObj = vjlData.find(p => p.id == yAnswerData.personId);
         setYesterdayAnswer(yAnswerObj || null);
       } else {
         setYesterdayAnswerId(null);
         setYesterdayAnswer(null);
       }
     })();
-  }, []);
+  }, [vjlData, loadingVJLData, error]);
 
   // Scroll vers la victoire
   useEffect(() => {
@@ -334,7 +338,8 @@ const CitationPage: React.FC<CitationPageProps> = ({ onWin, onLose, hardcore }) 
       <span>Maintenance en cours…<br/>Le jeu sera disponible dès que la mise à jour quotidienne est terminée.<br/>Nouvel essai dans quelques secondes…</span>
     </div>;
   }
-
+  if (loadingVJLData) return <div>Chargement des données...</div>;
+  if (error) return <div>Erreur de chargement des données : {error}</div>;
   if (loading || !answer || !mainMessage) return <div>Chargement...</div>;
 
   return (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import type { VJLPerson } from '../types/VJLPerson';
-import vjl from "../data/vjl.json";
+import { useVJLData } from '../context/VJLDataContext';
 import "./GuessInput.css";
 import { loadGame } from '../api/api';
 
@@ -15,6 +15,7 @@ const GuessInput: React.FC<GuessInputProps> = ({ onGuess, mode, hardcore }) => {
   const [suggestions, setSuggestions] = useState<VJLPerson[]>([]);
   const [guessedPersonIds, setGuessedPersonIds] = useState<number[]>([]);
   const [loadingGuesses, setLoadingGuesses] = useState(true);
+  const { vjlData } = useVJLData();
   const inputRef = useRef<HTMLInputElement>(null);
   // Focus automatique sur l'input après chargement (corrige les soucis d'autoFocus natif)
   useEffect(() => {
@@ -32,7 +33,7 @@ const GuessInput: React.FC<GuessInputProps> = ({ onGuess, mode, hardcore }) => {
     return str.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
   }
 
-  // Charger les guesses via l'API au montage, sauf en mode hardcore
+  // Charger les guesses au montage
   useEffect(() => {
     if (hardcore) {
       setGuessedPersonIds([]);
@@ -51,27 +52,27 @@ const GuessInput: React.FC<GuessInputProps> = ({ onGuess, mode, hardcore }) => {
     if (input.length > 0) {
       const normInput = normalize(input);
       // 1. Prénoms qui commencent par l'input
-      const prenomStartsWith = (vjl as VJLPerson[]).filter((p) => {
+      const prenomStartsWith = vjlData.filter((p) => {
         if (guessedPersonIds.includes(p.id)) return false;
         const normPrenom = p.prenom ? normalize(p.prenom) : "";
         return normPrenom.startsWith(normInput);
       });
       // 2. Alias qui commencent par l'input
-      const aliasStartsWith = (vjl as VJLPerson[]).filter((p) => {
+      const aliasStartsWith = vjlData.filter((p) => {
         if (guessedPersonIds.includes(p.id)) return false;
         if (prenomStartsWith.includes(p)) return false;
         const normAliases = p.aliases ? p.aliases.map(a => normalize(a)) : [];
         return normAliases.some(a => a.startsWith(normInput));
       });
       // 3. Prénoms qui contiennent l'input ailleurs
-      const prenomContains = (vjl as VJLPerson[]).filter((p) => {
+      const prenomContains = vjlData.filter((p) => {
         if (guessedPersonIds.includes(p.id)) return false;
         const normPrenom = p.prenom ? normalize(p.prenom) : "";
         if (prenomStartsWith.includes(p) || aliasStartsWith.includes(p)) return false;
         return normPrenom.includes(normInput);
       });
       // 4. Alias qui contiennent l'input ailleurs
-      const aliasContains = (vjl as VJLPerson[]).filter((p) => {
+      const aliasContains = vjlData.filter((p) => {
         if (guessedPersonIds.includes(p.id)) return false;
         if (prenomStartsWith.includes(p) || aliasStartsWith.includes(p) || prenomContains.includes(p)) return false;
         const normAliases = p.aliases ? p.aliases.map(a => normalize(a)) : [];
@@ -105,7 +106,7 @@ const GuessInput: React.FC<GuessInputProps> = ({ onGuess, mode, hardcore }) => {
       return;
     }
     const normInput = normalize(input.trim());
-    const found = (vjl as VJLPerson[]).find(p => {
+    const found = vjlData.find(p => {
       const normPrenom = p.prenom ? normalize(p.prenom) : "";
       const normAliases = p.aliases ? p.aliases.map(a => normalize(a)) : [];
       return normPrenom === normInput || normAliases.includes(normInput);
@@ -121,7 +122,7 @@ const GuessInput: React.FC<GuessInputProps> = ({ onGuess, mode, hardcore }) => {
         <input
           ref={inputRef}
           type="text"
-          placeholder="Tape un prénom ..."
+          placeholder={'Tape un prénom ...'}
           value={input}
           onChange={e => setInput(e.target.value)}
           style={{ flex: 1 }}

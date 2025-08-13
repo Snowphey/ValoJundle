@@ -1,6 +1,6 @@
 import React from 'react';
 import modes from '../data/modes.json';
-import { useWonModes } from '../WonModesContext';
+import { useWonModes } from '../context/WonModesContext';
 import { loadGame } from '../api/api';
 
 const AllModesShareBox: React.FC = () => {

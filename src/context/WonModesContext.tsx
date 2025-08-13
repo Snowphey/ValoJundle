@@ -14,8 +14,8 @@ export const useWonModes = () => {
   return ctx;
 };
 
-import modes from './data/modes.json';
-import { loadGame as apiLoadGame } from './api/api';
+import modes from '../data/modes.json';
+import { loadGame as apiLoadGame } from '../api/api';
 
 export const WonModesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [wonModes, setWonModes] = useState<string[]>([]);

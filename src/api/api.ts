@@ -1,7 +1,6 @@
 // src/api/api.ts
 // Fusion frontend pour tous les appels HTTP (React)
 import type { VJLPerson } from '../types/VJLPerson.ts';
-import vjlData from '../data/vjl.json';
 import { v4 as uuidv4 } from 'uuid';
 
 const API_URL = import.meta.env.VITE_API_URL + '/api';
@@ -63,9 +62,12 @@ export async function fetchWinnersCount(mode: string): Promise<number> {
   return data.count;
 }
 
-export function getPersonById(id: number): VJLPerson | undefined {
-  return vjlData.find(p => p.id === id);
+export async function fetchVJLData(): Promise<VJLPerson[]> {
+  const res = await fetch(`${API_URL}/vjl`);
+  if (!res.ok) throw new ResponseError('Erreur chargement vjl.json', res.status);
+  return await res.json();
 }
+
 
 export function getUserId() {
   return getOrCreateUserId();

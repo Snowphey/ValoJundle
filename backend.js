@@ -119,6 +119,17 @@ app.get('/api/cron-ready', (req, res) => {
   res.json({ ready: cronReady });
 });
 
+// GET /api/vjl : retourne le contenu du fichier vjl.json à chaque requête
+app.get('/api/vjl', (req, res) => {
+  const vjlPath = path.join(__dirname, 'src', 'data', 'vjl.json');
+  try {
+    const vjlData = JSON.parse(fs.readFileSync(vjlPath, 'utf8'));
+    res.json(vjlData);
+  } catch (e) {
+    res.status(500).json({ error: 'Erreur lecture vjl.json' });
+  }
+});
+
 // Helper: get today's answerDate (Europe/Paris)
 function getParisDateObj(date = new Date()) {
   // Retourne un objet Date à l'heure Europe/Paris correspondant à la date passée (ou maintenant)

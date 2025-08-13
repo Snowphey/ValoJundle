@@ -3,15 +3,15 @@ import GuessInput from './components/GuessInput';
 import type { VJLPerson } from './types/VJLPerson';
 import VictoryBox from './components/VictoryBox';
 import AnimatedCounter from './components/AnimatedCounter';
-import { useWonModes } from './WonModesContext';
+import { useWonModes } from './context/WonModesContext';
+import { useVJLData } from './context/VJLDataContext';
 import { buildShareText } from './utils/buildShareText';
 import { 
   loadGame as apiLoadGame, 
   saveGame as apiSaveGame, 
   fetchAnswer, 
   fetchAnswerIfExists, 
-  fetchWinnersCount, 
-  getPersonById, 
+  fetchWinnersCount,
   fetchTodayFromBackend, 
   fetchGuessCounts, 
   fetchCronReadyFromBackend,
@@ -53,9 +53,11 @@ const EmojiPage: React.FC<EmojiPageProps> = ({ onWin, onLose, hardcore }) => {
   const resultRef = useRef<HTMLDivElement>(null);
   const [historyCopied, setHistoryCopied] = useState(false);
   const [emojiAnimIdx, setEmojiAnimIdx] = useState<number | null>(null);
+  const { vjlData, loading: loadingVJLData, error } = useVJLData();
 
   // Chargement initial
   useEffect(() => {
+    if (loadingVJLData || error || vjlData.length === 0) return;
     let cancelled = false;
     let retryTimeout: NodeJS.Timeout | null = null;
     async function load() {
@@ -77,7 +79,7 @@ const EmojiPage: React.FC<EmojiPageProps> = ({ onWin, onLose, hardcore }) => {
         const today = await fetchTodayFromBackend();
         const answerData = await fetchAnswer(GAME_MODE, today);
         setAnswerId(answerData.answerId);
-        const answerObj = getPersonById(answerData.personId);
+        const answerObj = vjlData.find(p => p.id == answerData.personId);
         setAnswer(answerObj || null);
         // Ajout récupération emojis du jour
         if (answerObj && answerObj.discordUserId) {
@@ -108,7 +110,7 @@ const EmojiPage: React.FC<EmojiPageProps> = ({ onWin, onLose, hardcore }) => {
       cancelled = true;
       if (retryTimeout) clearTimeout(retryTimeout);
     };
-  }, [hardcore, refreshWonModes]);
+  }, [hardcore, refreshWonModes, vjlData, loadingVJLData, error]);
 
   // Rafraîchit guessCounts en temps réel
   useEffect(() => {
@@ -255,10 +257,11 @@ const EmojiPage: React.FC<EmojiPageProps> = ({ onWin, onLose, hardcore }) => {
   }
 
   // Pour l'affichage des guesses
-  const guessObjects = guesses.map(id => getPersonById(id)).filter(Boolean) as VJLPerson[];
+  const guessObjects = guesses.map(id => vjlData.find(p => p.id == id)).filter(Boolean) as VJLPerson[];
 
   // Récupère la réponse d'hier au chargement
   useEffect(() => {
+    if (loadingVJLData || error || vjlData.length === 0) return;
     (async () => {
       const today = await fetchTodayFromBackend();
       const todayDate = new Date(today);
@@ -268,14 +271,14 @@ const EmojiPage: React.FC<EmojiPageProps> = ({ onWin, onLose, hardcore }) => {
       const yAnswerData = await fetchAnswerIfExists(GAME_MODE, yDate);
       if (yAnswerData && typeof yAnswerData.personId !== 'undefined') {
         setYesterdayAnswerId(yAnswerData.answerId);
-        const yAnswerObj = getPersonById(yAnswerData.personId);
+        const yAnswerObj = vjlData.find(p => p.id == yAnswerData.personId);
         setYesterdayAnswer(yAnswerObj || null);
       } else {
         setYesterdayAnswerId(null);
         setYesterdayAnswer(null);
       }
     })();
-  }, []);
+  }, [vjlData, loadingVJLData, error]);
 
   // Scroll vers la victoire
   useEffect(() => {
@@ -323,7 +326,8 @@ const EmojiPage: React.FC<EmojiPageProps> = ({ onWin, onLose, hardcore }) => {
       <span>Maintenance en cours…<br/>Le jeu sera disponible dès que la mise à jour quotidienne est terminée.<br/>Nouvel essai dans quelques secondes…</span>
     </div>;
   }
-
+  if (loadingVJLData) return <div>Chargement des données...</div>;
+  if (error) return <div>Erreur de chargement des données : {error}</div>;
   if (loading || !answer) return <div>Chargement...</div>;
 
   return (

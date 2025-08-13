@@ -5,10 +5,11 @@ import ColorIndicator from './components/ColorIndicator';
 import './ValoJundleTheme.css';
 import VictoryBox from './components/VictoryBox';
 import { buildShareText } from './utils/buildShareText';
-import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswer, fetchAnswerIfExists, fetchWinnersCount, getPersonById, fetchTodayFromBackend, fetchCronReadyFromBackend, fetchGuessCounts } from './api/api';
+import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswer, fetchAnswerIfExists, fetchWinnersCount, fetchTodayFromBackend, fetchCronReadyFromBackend, fetchGuessCounts } from './api/api';
 import type { VJLPerson } from './types/VJLPerson';
 import AnimatedCounter from './components/AnimatedCounter';
-import { useWonModes } from './WonModesContext';
+import { useWonModes } from './context/WonModesContext';
+import { useVJLData } from './context/VJLDataContext';
 import AllModesShareBox from './components/AllModesShareBox';
 import YesterdayAnswerBox from './components/YesterdayAnswerBox';
 
@@ -74,9 +75,11 @@ const ClassicPage: React.FC = () => {
   const [yesterdayAnswerId, setYesterdayAnswerId] = useState<number | null>(null);
   const [maintenance, setMaintenance] = useState(false);
   const { refreshWonModes } = useWonModes();
+  const { vjlData, loading: loadingVJLData, error } = useVJLData();
 
   // Chargement initial depuis le backend
   useEffect(() => {
+    if(loadingVJLData || error || vjlData.length === 0) return;
     let cancelled = false;
     let retryTimeout: NodeJS.Timeout | null = null;
     async function tryLoad() {
@@ -86,7 +89,7 @@ const ClassicPage: React.FC = () => {
         const today = await fetchTodayFromBackend();
         const answer = await fetchAnswer(GAME_MODE, today);
         setAnswerId(answer.answerId);
-        const answerObj = getPersonById(answer.personId);
+        const answerObj = vjlData.find(p => p.id === answer.personId);
         setAnswer(answerObj || null);
         // Puis charge la partie
         const state = await apiLoadGame(GAME_MODE);
@@ -115,7 +118,7 @@ const ClassicPage: React.FC = () => {
       cancelled = true;
       if (retryTimeout) clearTimeout(retryTimeout);
     };
-  }, []);
+  }, [loadingVJLData, error, vjlData]);
 
   // Récupère le nombre de gagnants au chargement et en temps réel
   useEffect(() => {
@@ -148,6 +151,7 @@ const ClassicPage: React.FC = () => {
 
   // Récupère la réponse d'hier au chargement
   useEffect(() => {
+    if (loadingVJLData || error || vjlData.length === 0) return;
     (async () => {
       const today = await fetchTodayFromBackend();
       const todayDate = new Date(today);
@@ -157,14 +161,14 @@ const ClassicPage: React.FC = () => {
       const yAnswerData = await fetchAnswerIfExists(GAME_MODE, yDate);
       if (yAnswerData && typeof yAnswerData.personId !== 'undefined') {
         setYesterdayAnswerId(yAnswerData.answerId);
-        const yAnswerObj = getPersonById(yAnswerData.personId);
+        const yAnswerObj = vjlData.find(p => p.id === yAnswerData.personId);
         setYesterdayAnswer(yAnswerObj || null);
       } else {
         setYesterdayAnswerId(null);
         setYesterdayAnswer(null);
       }
     })();
-  }, []);
+  }, [vjlData, loadingVJLData, error]);
 
   const handleGuess = useCallback((person: VJLPerson) => {
     setGuesses(prevGuesses => {
@@ -239,7 +243,7 @@ const ClassicPage: React.FC = () => {
   // Utilise la fonction utilitaire commune
   function getShareText(): string {
     if (!answer) return '';
-    return buildShareText(guesses.map(id => getPersonById(id)!), answer, ATTRIBUTES, GAME_MODE, answerId ? String(answerId) : '?');
+    return buildShareText(guesses.map(id => vjlData.find(p => p.id === id)!), answer, ATTRIBUTES, GAME_MODE, answerId ? String(answerId) : '?');
   }
 
   // Chronomètre (reset à minuit Europe/Paris)
@@ -309,7 +313,7 @@ const ClassicPage: React.FC = () => {
   };
 
   // Pour l'historique, il faut passer les objets VJLPerson :
-  const guessObjects = guesses.map(id => getPersonById(id)).filter(Boolean) as VJLPerson[];
+  const guessObjects = guesses.map(id => vjlData.find(p => p.id === id)).filter(Boolean) as VJLPerson[];
 
   // Affichage conditionnel pendant le chargement ou maintenance
   if (maintenance) {
@@ -318,8 +322,14 @@ const ClassicPage: React.FC = () => {
     </div>;
   }
 
+  if (loadingVJLData) {
+    return <div>Chargement des données...</div>;
+  }
+  if (error) {
+    return <div>Erreur de chargement des données : {error}</div>;
+  }
   if (loading || !answer) {
-    return <div>Loading...</div>;
+    return <div>Chargement...</div>;
   }
 
   return (

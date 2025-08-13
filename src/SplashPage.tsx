@@ -3,10 +3,11 @@ import GuessInput from './components/GuessInput';
 import './ValoJundleTheme.css';
 import type { VJLPerson } from './types/VJLPerson';
 import VictoryBox from './components/VictoryBox';
-import { useWonModes } from './WonModesContext';
+import { useWonModes } from './context/WonModesContext';
+import { useVJLData } from './context/VJLDataContext';
 import GuessHistory from './components/GuessHistory';
 import { buildShareText } from './utils/buildShareText';
-import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchSplashOfTheDay, fetchGuessCounts, fetchWinnersCount, getPersonById, fetchTodayFromBackend, fetchAnswerIfExists, fetchRandomSplash, fetchAnswer, fetchCronReadyFromBackend } from './api/api';
+import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchSplashOfTheDay, fetchGuessCounts, fetchWinnersCount, fetchTodayFromBackend, fetchAnswerIfExists, fetchRandomSplash, fetchAnswer, fetchCronReadyFromBackend } from './api/api';
 import AllModesShareBox from './components/AllModesShareBox';
 import AnimatedCounter from './components/AnimatedCounter';
 import YesterdayAnswerBox from './components/YesterdayAnswerBox';
@@ -43,6 +44,7 @@ const SplashPage: React.FC<SplashPageProps> = ({ onWin, onLose, hardcore }) => {
     const resultRef = useRef<HTMLDivElement>(null);
     const [historyCopied, setHistoryCopied] = useState(false);
     const [zoomLocked, setZoomLocked] = useState(false);
+    const { vjlData } = useVJLData(); 
 
   // Chargement initial
     useEffect(() => {
@@ -68,7 +70,7 @@ const SplashPage: React.FC<SplashPageProps> = ({ onWin, onLose, hardcore }) => {
             const today = await fetchTodayFromBackend();
             const answerData = await fetchAnswer(GAME_MODE, today);
             setAnswerId(answerData.answerId);
-            const answerObj = getPersonById(answerData.personId);
+            const answerObj = vjlData.find(p => p.id == answerData.personId);
             setAnswer(answerObj || null);
 
             // Ajout récupération splash du jour
@@ -250,7 +252,7 @@ const SplashPage: React.FC<SplashPageProps> = ({ onWin, onLose, hardcore }) => {
       }
     
       // Pour l'affichage des guesses
-      const guessObjects = guesses.map(id => getPersonById(id)).filter(Boolean) as VJLPerson[];
+      const guessObjects = guesses.map(id => vjlData.find(p => p.id == id)).filter(Boolean) as VJLPerson[];
     
       // Récupère la réponse d'hier au chargement
       useEffect(() => {
@@ -263,7 +265,7 @@ const SplashPage: React.FC<SplashPageProps> = ({ onWin, onLose, hardcore }) => {
           const yAnswerData = await fetchAnswerIfExists(GAME_MODE, yDate);
           if (yAnswerData && typeof yAnswerData.personId !== 'undefined') {
             setYesterdayAnswerId(yAnswerData.answerId);
-            const yAnswerObj = getPersonById(yAnswerData.personId);
+            const yAnswerObj = vjlData.find(p => p.id == yAnswerData.personId);
             setYesterdayAnswer(yAnswerObj || null);
           } else {
             setYesterdayAnswerId(null);

@@ -1,4 +1,3 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './index.css'
@@ -6,12 +5,14 @@ import ClassicPage from './ClassicPage';
 import CitationPage from './CitationPage';
 import ImagePage from './ImagePage';
 import MainLayout from './MainLayout';
-import { WonModesProvider } from './WonModesContext';
+import { WonModesProvider } from './context/WonModesContext';
+import { VJLDataProvider } from './context/VJLDataContext';
 import EmojiPage from './EmojiPage';
 import HardcorePage from './HardcorePage';
 import SplashPage from './SplashPage';
 
 createRoot(document.getElementById('root')!).render(
+  <VJLDataProvider>
     <WonModesProvider>
       <HashRouter>
         <Routes>
@@ -26,5 +27,6 @@ createRoot(document.getElementById('root')!).render(
           </Route>
         </Routes>
       </HashRouter>
-    </WonModesProvider>,
+    </WonModesProvider>
+  </VJLDataProvider>,
 )

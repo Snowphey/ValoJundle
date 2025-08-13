@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import './GameModeSelector.css';
 import { Tooltip } from './components/Tooltip';
 import modes from './data/modes.json';
-import { useWonModes } from './WonModesContext';
+import { useWonModes } from './context/WonModesContext';
 
 const GameModeSelector: React.FC = () => {
   const navigate = useNavigate();
