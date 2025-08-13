@@ -44,67 +44,68 @@ const SplashPage: React.FC<SplashPageProps> = ({ onWin, onLose, hardcore }) => {
     const resultRef = useRef<HTMLDivElement>(null);
     const [historyCopied, setHistoryCopied] = useState(false);
     const [zoomLocked, setZoomLocked] = useState(false);
-    const { vjlData } = useVJLData(); 
+  const { vjlData, loading: loadingVJLData, error } = useVJLData();
 
   // Chargement initial
-    useEffect(() => {
-        let cancelled = false;
-        let retryTimeout: NodeJS.Timeout | null = null;
-        async function load() {
-        setLoading(true);
-        setMaintenance(false);
-        try {
-            if (hardcore) {
-            // Splash aléatoire
-            const data = await fetchRandomSplash();
-            setAnswer(data.person || null);
-            setSplash(data.person.avatarUrl || '');
-            setStartCoords(data.startCoords || null);
-            setGuesses([]);
-            setHasWon(false);
-            setShowVictoryBox(false);
-            setGuessCounts({});
-            setLoading(false);
-            return;
-            }
-            const today = await fetchTodayFromBackend();
-            const answerData = await fetchAnswer(GAME_MODE, today);
-            setAnswerId(answerData.answerId);
-            const answerObj = vjlData.find(p => p.id == answerData.personId);
-            setAnswer(answerObj || null);
+  useEffect(() => {
+    if (loadingVJLData || error || vjlData.length === 0) return;
+    let cancelled = false;
+    let retryTimeout: NodeJS.Timeout | null = null;
+    async function load() {
+    setLoading(true);
+    setMaintenance(false);
+    try {
+      if (hardcore) {
+      // Splash aléatoire
+      const data = await fetchRandomSplash();
+      setAnswer(data.person || null);
+      setSplash(data.person.avatarUrl || '');
+      setStartCoords(data.startCoords || null);
+      setGuesses([]);
+      setHasWon(false);
+      setShowVictoryBox(false);
+      setGuessCounts({});
+      setLoading(false);
+      return;
+      }
+      const today = await fetchTodayFromBackend();
+      const answerData = await fetchAnswer(GAME_MODE, today);
+      setAnswerId(answerData.answerId);
+      const answerObj = vjlData.find(p => p.id == answerData.personId);
+      setAnswer(answerObj || null);
 
-            // Ajout récupération splash du jour
-            if (answerObj && answerObj.discordUserId) {
-                const splashData = await fetchSplashOfTheDay(answerObj.discordUserId);
-                setSplash(splashData.person.avatarUrl || '');
-                setStartCoords(splashData.startCoords || null);
-            } else {
-                setSplash('');
-                setStartCoords(null);
-            }
-            const state = await apiLoadGame(GAME_MODE);
-            setGuesses(state.guesses || []);
-            setHasWon(state.hasWon || false);
-            if (typeof state.rank === 'number') setMyRank(state.rank);
-            if (state.hasWon) setShowVictoryBox(true);
-            const counts = await fetchGuessCounts(GAME_MODE);
-            setGuessCounts(counts);
-            await refreshWonModes();
-            setLoading(false);
-        } catch (err) {
-            setMaintenance(true);
-            setLoading(false);
-            retryTimeout = setTimeout(() => {
-            if (!cancelled) load();
-            }, 3000);
-        }
-        }
-        load();
-        return () => {
-        cancelled = true;
-        if (retryTimeout) clearTimeout(retryTimeout);
-        };
-    }, [hardcore, refreshWonModes]);
+      // Ajout récupération splash du jour
+      if (answerObj && answerObj.discordUserId) {
+        const splashData = await fetchSplashOfTheDay(answerObj.discordUserId);
+        setSplash(splashData.person.avatarUrl || '');
+        setStartCoords(splashData.startCoords || null);
+      } else {
+        setSplash('');
+        setStartCoords(null);
+      }
+      const state = await apiLoadGame(GAME_MODE);
+      setGuesses(state.guesses || []);
+      setHasWon(state.hasWon || false);
+      if (typeof state.rank === 'number') setMyRank(state.rank);
+      if (state.hasWon) setShowVictoryBox(true);
+      const counts = await fetchGuessCounts(GAME_MODE);
+      setGuessCounts(counts);
+      await refreshWonModes();
+      setLoading(false);
+    } catch (err) {
+      setMaintenance(true);
+      setLoading(false);
+      retryTimeout = setTimeout(() => {
+      if (!cancelled) load();
+      }, 3000);
+    }
+    }
+    load();
+    return () => {
+    cancelled = true;
+    if (retryTimeout) clearTimeout(retryTimeout);
+    };
+  }, [hardcore, refreshWonModes, vjlData, loadingVJLData, error]);
 
 
     // Rafraîchit guessCounts en temps réel
@@ -256,6 +257,7 @@ const SplashPage: React.FC<SplashPageProps> = ({ onWin, onLose, hardcore }) => {
     
       // Récupère la réponse d'hier au chargement
       useEffect(() => {
+        if (loadingVJLData || error || vjlData.length === 0) return;
         (async () => {
           const today = await fetchTodayFromBackend();
           const todayDate = new Date(today);
@@ -272,7 +274,7 @@ const SplashPage: React.FC<SplashPageProps> = ({ onWin, onLose, hardcore }) => {
             setYesterdayAnswer(null);
           }
         })();
-      }, []);
+      }, [vjlData, loadingVJLData, error]);
     
       // Scroll vers la victoire
       useEffect(() => {
@@ -313,7 +315,8 @@ const SplashPage: React.FC<SplashPageProps> = ({ onWin, onLose, hardcore }) => {
       <span>Maintenance en cours…<br/>Le jeu sera disponible dès que la mise à jour quotidienne est terminée.<br/>Nouvel essai dans quelques secondes…</span>
     </div>;
   }
-
+  if (loadingVJLData) return <div>Chargement des données...</div>;
+  if (error) return <div>Erreur de chargement des données : {error}</div>;
   if (loading || !answer) return <div>Chargement...</div>;
 
   return (
