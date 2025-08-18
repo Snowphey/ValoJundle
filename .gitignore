@@ -17,6 +17,7 @@ public/images-of-the-day
 src/data/answers.json
 src/data/games.json
 src/data/hardcore_leaderboard.json
+src/data/vjl.json
 
 discord/config.json
 discord/raw_data
