@@ -35,9 +35,6 @@ let cronReady = true; // true au démarrage, false pendant le cron
 
 // --- Purge et génération du jour si besoin au démarrage ---
 async function ensureDailyPurgeAndGeneration() {
-  // 0. Met à jour les avatars Discord
-  await updateAllDiscordAvatars();
-
   // 1. Fetch nouveaux messages du jour
   let scrapOk = true;
   try {
@@ -120,7 +117,10 @@ app.get('/api/cron-ready', (req, res) => {
 });
 
 // GET /api/vjl : retourne le contenu du fichier vjl.json à chaque requête
-app.get('/api/vjl', (req, res) => {
+app.get('/api/vjl', async (req, res) => {
+  // 0. Met à jour les avatars Discord
+  await updateAllDiscordAvatars();
+
   const vjlPath = path.join(__dirname, 'src', 'data', 'vjl.json');
   try {
     const vjlData = JSON.parse(fs.readFileSync(vjlPath, 'utf8'));
@@ -808,9 +808,6 @@ async function updateAllDiscordAvatars() {
 // Planifie une purge quotidienne à minuit Europe/Paris
 cron.schedule('0 0 * * *', async () => {
   cronReady = false; // Le cron commence
-
-  // 0. Met à jour les avatars Discord
-  await updateAllDiscordAvatars();
 
   // 1. Fetch nouveaux messages du jour
   let scrapOk = true;
