@@ -25,8 +25,6 @@ const ANSWERS_FILE = path.join(__dirname, 'src', 'data', 'answers.json');
 var modes = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'modes.json'), 'utf8'));
 modes = modes.filter(m => m.key !== 'hardcore'); // On retire hardcore car géré différemment
 
-const vjlData = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'vjl.json'), 'utf8'));
-
 app.use(cors());
 app.use(express.json());
 
@@ -77,6 +75,7 @@ async function ensureDailyPurgeAndGeneration() {
   const today = getAnswerDateForToday();
   const answers = readAnswers();
   const hasToday = Object.values(answers).some(a => a && a.date === today);
+  const vjlData = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'vjl.json'), 'utf8'));
   if (!hasToday) {
     cronReady = false;
     writeGames({});
@@ -153,6 +152,7 @@ function getParisDateObj(date = new Date()) {
 }
 
 function getPersonById(id) {
+  const vjlData = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'vjl.json'), 'utf8'));
   return vjlData.find(p => p.id === id);
 }
 
@@ -220,6 +220,7 @@ function getAnswerForDay(mode, date, vjlData, createIfMissing = true) {
 // GET /api/answer/:mode/:date
 app.get('/api/answer/:mode/:date', (req, res) => {
   const { mode, date } = req.params;
+  const vjlData = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'vjl.json'), 'utf8'));
   const { personId, answerId } = getAnswerForDay(mode, date, vjlData);
   res.json({ personId, answerId });
 });
@@ -227,6 +228,7 @@ app.get('/api/answer/:mode/:date', (req, res) => {
 // Nouvelle route pour obtenir la réponse SANS création automatique
 app.get('/api/answer-if-exists/:mode/:date', (req, res) => {
   const { mode, date } = req.params;
+  const vjlData = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'vjl.json'), 'utf8'));
   const result = getAnswerForDay(mode, date, vjlData, false);
   if (!result) return res.json(null);
   res.json(result);
@@ -279,6 +281,7 @@ app.get('/api/game/:userId/:mode', (req, res) => {
   const { userId, mode } = req.params;
   const games = readGames();
   const today = getAnswerDateForToday();
+  const vjlData = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'vjl.json'), 'utf8'));
   // S'assure que la réponse du jour est bien générée et stockée
   const { answerId } = getAnswerForDay(mode, today, vjlData);
   let user = games[userId] || {};
@@ -298,6 +301,7 @@ app.post('/api/game/:userId/:mode', (req, res) => {
   const { guesses, hasWon } = req.body;
   const games = readGames();
   const today = getAnswerDateForToday();
+  const vjlData = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'vjl.json'), 'utf8'));
   const { answerId } = getAnswerForDay(mode, today, vjlData);
   if (!games[userId]) games[userId] = {};
   let state = games[userId][mode] || null;
@@ -519,6 +523,8 @@ function shuffleArray(array) {
 
 // --- Génération emoji du jour ---
 function generateEmojisOfTheDay(today, discordUserId) {
+  const vjlData = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'vjl.json'), 'utf8'));
+
   const person = getPersonById(
     vjlData.find(p => p.discordUserId === discordUserId)?.id
   );
@@ -737,6 +743,8 @@ app.get('/api/splash-of-the-day/:discordUserId', (req, res) => {
 
 // --- Génération splash du jour ---
 function generateSplashOfTheDay(today, discordUserId) {
+  const vjlData = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'vjl.json'), 'utf8'));
+
   // On prend le membre correspondant à discordUserId avec avatar
   const found = vjlData.find(p => p.discordUserId === discordUserId && p.avatarUrl && p.avatarUrl.length > 0);
   if (!found) return;
@@ -849,6 +857,8 @@ cron.schedule('0 0 * * *', async () => {
   }
 
   const today = getAnswerDateForToday();
+  const vjlData = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'vjl.json'), 'utf8'));
+
   writeGames({});
   // Utilise la liste centralisée des modes
   for (const modeObj of modes) {
@@ -885,6 +895,8 @@ process.on('SIGTERM', () => {
 
 // GET /api/random-citation
 app.get('/api/random-citation', (req, res) => {
+  const vjlData = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'vjl.json'), 'utf8'));
+
   const citationsPath = path.join(__dirname, 'discord', 'citations.json');
   let citations = [];
   try {
@@ -915,6 +927,8 @@ app.get('/api/random-citation', (req, res) => {
 
 // GET /api/random-image
 app.get('/api/random-image', async (req, res) => {
+  const vjlData = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'vjl.json'), 'utf8'));
+
   const attachmentsPath = path.join(__dirname, 'discord', 'attachments.json');
   let attachments = [];
   try {
@@ -981,6 +995,8 @@ app.get('/api/random-image', async (req, res) => {
 app.get('/api/random-emoji', (req, res) => {
   const answers = readAnswers();
   const today = getAnswerDateForToday();
+  const vjlData = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'vjl.json'), 'utf8'));
+
   // On prend un membre au hasard qui a des emojis
   const pool = vjlData.filter(p => Array.isArray(p.emojis) && p.emojis.length > 0);
   if (!pool.length) return res.status(404).json({ error: 'no_random_emoji' });
@@ -995,6 +1011,8 @@ app.get('/api/random-emoji', (req, res) => {
 
 // GET /api/random-splash
 app.get('/api/random-splash', (req, res) => {
+  const vjlData = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'vjl.json'), 'utf8'));
+
   // Tire un membre au hasard avec avatar
   const pool = vjlData.filter(p => p.avatarUrl && p.avatarUrl.length > 0);
   if (!pool.length) return res.status(404).json({ error: 'no_avatar' });
