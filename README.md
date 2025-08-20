@@ -95,6 +95,30 @@ Le site sera accessible sur http://localhost:5173
 
 > Les URLs sont configurables dans le fichier `.env`.
 
+## Configuration des variables d'environnement
+
+Le projet utilise deux fichiers d'environnement : `.env` (pour le développement) et `.env.production` (pour la production). Ces fichiers ne sont pas versionnés (voir `.gitignore`).
+
+Exemple de contenu :
+
+```
+VITE_PUBLIC_URL=http://localhost:5173
+VITE_API_URL=http://localhost:3001
+```
+
+Pour la production :
+
+```
+VITE_PUBLIC_URL=URL_DE_DEPLOIEMENT
+VITE_API_URL=URL_API_DE_DEPLOIEMENT
+```
+
+**Comment remplir ?**
+- `VITE_PUBLIC_URL` : l'URL publique du site (celle où le front est servi).
+- `VITE_API_URL` : l'URL de l'API backend (celle où le backend Express écoute).
+
+Adaptez ces valeurs selon votre environnement (localhost pour le dev, votre domaine pour la prod).
+
 ## Déploiement
 1. Build le front :
    ```powershell
