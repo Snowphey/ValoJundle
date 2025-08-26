@@ -771,10 +771,30 @@ function generateSplashOfTheDay(today, discordUserId) {
   writeAnswers(answers);
 }
 
-// Met à jour les avatarUrl de chaque membre dans vjl.json via l'API Discord
+// Met à jour les avatars Discord en local (quotidien):
+// - Vide le dossier public/avatars-of-the-day
+// - Récupère l'avatar de chaque membre (png 512px)
+// - Télécharge en local et met person.avatarUrl => "/avatars-of-the-day/<personId>.png"
 async function updateAllDiscordAvatars() {
   const vjlPath = path.join(__dirname, 'src', 'data', 'vjl.json');
   let vjl = JSON.parse(fs.readFileSync(vjlPath, 'utf8'));
+
+  // 1) Purge le dossier des avatars du jour
+  const localDir = path.join(__dirname, 'public', 'avatars-of-the-day');
+  try {
+    if (fs.existsSync(localDir)) {
+      for (const f of fs.readdirSync(localDir)) {
+        try {
+          fs.unlinkSync(path.join(localDir, f));
+        } catch {}
+      }
+    } else {
+      fs.mkdirSync(localDir, { recursive: true });
+    }
+  } catch (e) {
+    console.error('[AVATAR] Erreur purge dossier avatars-of-the-day:', e);
+  }
+
   const client = new Client({ intents: [GatewayIntentBits.Guilds] });
   let loginFailed = false;
   try {
@@ -782,13 +802,27 @@ async function updateAllDiscordAvatars() {
       client.once('ready', async () => {
         try {
           for (const member of vjl) {
-            if (member.discordUserId) {
+            if (!member.discordUserId) {
+              // Pas d'ID Discord, on vide l'avatar si besoin
+              member.avatarUrl = member.avatarUrl || '';
+              continue;
+            }
+            try {
+              const user = await client.users.fetch(member.discordUserId);
+              const avatarUrl = user.displayAvatarURL({ extension: 'png', size: 512 });
+              const fileName = `${member.id}.png`;
+              const localPath = path.join(localDir, fileName);
               try {
-                const user = await client.users.fetch(member.discordUserId);
-                member.avatarUrl = user.displayAvatarURL({ extension: 'png', size: 512 });
+                await downloadImageToLocal(avatarUrl, localPath);
+                member.avatarUrl = `/avatars-of-the-day/${fileName}`;
               } catch (e) {
-                member.avatarUrl = member.avatarUrl || '';
+                console.error(`[AVATAR] Download failed for ${member.discordUserId}:`, e?.message || e);
+                // Dossier purgé: éviter un chemin cassé -> mettre vide
+                member.avatarUrl = '';
               }
+            } catch (e) {
+              console.error(`[AVATAR] Fetch user failed for ${member.discordUserId}:`, e?.message || e);
+              member.avatarUrl = '';
             }
           }
         } catch (e) {
@@ -808,14 +842,18 @@ async function updateAllDiscordAvatars() {
     return 'discord_error';
   }
   if (loginFailed) return 'discord_error';
-  // Écriture des changements dans vjl.json
+
+  // 3) Écriture des changements dans vjl.json
   fs.writeFileSync(vjlPath, JSON.stringify(vjl, null, 2), 'utf8');
-  console.log("Mise à jour des avatars terminée.");
+  console.log('Mise à jour des avatars en local terminée.');
 }
 
 // Planifie une purge quotidienne à minuit Europe/Paris
 cron.schedule('0 0 * * *', async () => {
   cronReady = false; // Le cron commence
+
+  // 0. Met à jour les avatars Discord (purge + refetch en local)
+  await updateAllDiscordAvatars();
 
   // 1. Fetch nouveaux messages du jour
   let scrapOk = true;
