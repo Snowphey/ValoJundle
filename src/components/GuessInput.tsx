@@ -49,6 +49,19 @@ const GuessInput: React.FC<GuessInputProps> = ({ onGuess, mode, hardcore }) => {
   }, [mode, hardcore]);
 
   useEffect(() => {
+    const trimmed = input.trim();
+
+    if (trimmed === '*') {
+      // Afficher tout le monde (hors déjà devinés), trié par prénom
+      const all = vjlData
+        .filter(p => !guessedPersonIds.includes(p.id))
+        .sort((a, b) =>
+          normalize(a.prenom ?? '').localeCompare(normalize(b.prenom ?? ''))
+        );
+      setSuggestions(all);
+      return;
+    }
+
     if (input.length > 0) {
       const normInput = normalize(input);
       // 1. Prénoms qui commencent par l'input
