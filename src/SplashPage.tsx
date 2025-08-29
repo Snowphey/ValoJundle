@@ -415,7 +415,7 @@ const SplashPage: React.FC<SplashPageProps> = ({ onWin, onLose, hardcore }) => {
             memberName={answer?.prenom ?? ''} 
             attempts={guessObjects.length} 
             nextMode="Oeil"
-            nextModeImg={'oeil.png'}
+            nextModeImg={'next-oeil.png'}
             countdown={countdown} 
             timezone="Europe/Paris (UTC+2)" 
             rank={myRank} 
