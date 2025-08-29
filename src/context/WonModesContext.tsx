@@ -23,8 +23,10 @@ export const WonModesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const refreshWonModes = useCallback(async () => {
     const userId = localStorage.getItem('valojundle-userid');
     if (userId) {
+      // On ne comptabilise pas le mode "hardcore" dans wonModes
+      const winnableModes = modes.filter(m => m.key !== 'hardcore');
       const allModes = await Promise.all(
-        modes.map(async m => {
+        winnableModes.map(async m => {
           const g = await apiLoadGame(m.key);
           return g.hasWon ? m.key : null;
         })
