@@ -121,6 +121,8 @@ const VictoryBox: React.FC<VictoryBoxProps> = ({
                   <>Emoji<br />Avec des emojis de quelqu'un</>
                 ) : nextMode.toLowerCase() === 'splash' ? (
                   <>Splash<br />Avec l'avatar de quelqu'un</>
+                ) : nextMode.toLowerCase() === 'oeil' ? (
+                  <>Oeil<br />Avec  l'oeil de quelqu'un</>
                 ) : nextMode.toLowerCase() === 'hardcore' ? (
                   <>Hardcore<br />Mode compilation hardcore</>
                 ) : (

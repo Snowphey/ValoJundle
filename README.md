@@ -7,12 +7,13 @@ ValoJundle est un jeu web inspiré des jeux de type "Wordle" mais adapté à la 
 </p>
 
 ## Fonctionnalités principales
-- **Six modes de jeu** :
+- **Sept modes de jeu** :
   - **Classique** : devine le membre mystère à partir de ses attributs (rôle, région de naissance, couleur de cheveux, etc.).
   - **Citation** : retrouve qui a écrit la citation du jour sur le Discord !
   - **Image** : retrouve qui a uploadé une image sur le Discord !
   - **Emoji** : devine le membre à partir d'émojis le représentant !
   - **Splash** : retrouve le membre à partir de son avatar !
+   - **Oeil** : devine le membre à partir d'un crop de son œil ! L'image est en noir et blanc au début puis passe en couleur après quelques essais.
   - **Hardcore** : enchaîne les modes Citation, Image et Emoji aléatoirement sans perdre pour avoir le meilleur score sur le leaderboard !
 - **Historique des essais** et partage facile de ta performance.
 - **Classement quotidien** : vois combien de personnes ont trouvé la bonne réponse.
@@ -137,6 +138,11 @@ Adaptez ces valeurs selon votre environnement (localhost pour le dev, votre doma
 - `src/` : code source React (pages, composants, utilitaires).
 - `public/` : images, assets statiques.
 - `src/data/vjl.json` : base de données des membres VJL.
+
+### Mode "Oeil"
+- Le backend choisit la réponse du jour parmi les membres qui possèdent un fichier d'œil dans `public/eyes/`.
+- Nomme les fichiers avec l'identifiant VJL (`id`) du membre, extensions supportées: `.webp`, `.png`, `.jpg`, `.jpeg`.
+   - Exemple: `public/eyes/12.webp` correspond au membre d'id 12.
 
 ## Personnalisation
 - Ajoute/modifie les membres dans `src/data/vjl.json`.

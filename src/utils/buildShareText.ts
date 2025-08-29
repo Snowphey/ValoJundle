@@ -38,6 +38,10 @@ export function buildShareText(
     return `J'ai trouvé le membre #ValoJundle #${gameNumber} avec une image en ${tries} coup${tries > 1 ? 's' : ''}${isOneShot ? ` ${oneShotEmoji}` : isEasy ? ' (facile)' : ''}  ⚔️\n\n${URL}`;
   }
 
+  if (mode === 'oeil') {
+    return `J'ai trouvé le membre #ValoJundle #${gameNumber} avec un oeil en ${tries} coup${tries > 1 ? 's' : ''}${isOneShot ? ` ${oneShotEmoji}` : isEasy ? ' (facile)' : ''}  ⚔️\n\n${URL}`;
+  }
+
   if (mode === 'emoji') {
     return `J'ai trouvé le membre #ValoJundle #${gameNumber} avec des emojis en ${tries} coup${tries > 1 ? 's' : ''}${isOneShot ? ` ${oneShotEmoji}` : isEasy ? ' (facile)' : ''}  ⚔️\n\n${URL}`;
   }

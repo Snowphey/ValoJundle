@@ -14,6 +14,7 @@ dist-ssr
 
 public/images-of-the-day
 public/avatars-of-the-day
+public/eyes
 
 src/data/answers.json
 src/data/games.json

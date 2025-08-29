@@ -10,6 +10,7 @@ import { VJLDataProvider } from './context/VJLDataContext';
 import EmojiPage from './EmojiPage';
 import HardcorePage from './HardcorePage';
 import SplashPage from './SplashPage';
+import OeilPage from './OeilPage';
 
 createRoot(document.getElementById('root')!).render(
   <VJLDataProvider>
@@ -22,6 +23,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="image" element={<ImagePage hardcore={false} />} />
             <Route path="emoji" element={<EmojiPage hardcore={false} />} />
             <Route path="splash" element={<SplashPage hardcore={false} />} />
+            <Route path="oeil" element={<OeilPage hardcore={false} />} />
             <Route path="hardcore" element={<HardcorePage />} />
             <Route index element={<Navigate to="/classic" replace />} />
           </Route>

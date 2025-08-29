@@ -414,8 +414,8 @@ const SplashPage: React.FC<SplashPageProps> = ({ onWin, onLose, hardcore }) => {
             memberIcon={answer?.avatarUrl ? `${answer.avatarUrl}?v=${new Date().toISOString().slice(0,10)}` : ''} 
             memberName={answer?.prenom ?? ''} 
             attempts={guessObjects.length} 
-            nextMode="Hardcore"
-            nextModeImg={'next-hardcore.png'}
+            nextMode="Oeil"
+            nextModeImg={'oeil.png'}
             countdown={countdown} 
             timezone="Europe/Paris (UTC+2)" 
             rank={myRank} 

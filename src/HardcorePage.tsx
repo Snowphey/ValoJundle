@@ -3,11 +3,13 @@ import CitationPage from './CitationPage';
 import ImagePage from './ImagePage';
 import EmojiPage from './EmojiPage';
 import { fetchHardcoreLeaderboard, submitHardcoreScore, type HardcoreScore } from './api/api';
+import OeilPage from './OeilPage';
 
 const MODES = [
   { name: 'citation', component: CitationPage },
   { name: 'image', component: ImagePage },
   { name: 'emoji', component: EmojiPage },
+  { name: 'oeil', component: OeilPage }
 ];
 
 function getRandomMode() {

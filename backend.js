@@ -242,6 +242,17 @@ function getAnswerForDay(mode, date, vjlData, createIfMissing = true) {
         } else {
           console.warn('[answer-picker] Aucune personne éligible (image) — fallback au pool complet');
         }
+      } else if (mode === 'oeil') {
+        // Filtrer sur les utilisateurs pour lesquels un fichier existe dans public/eyes/<id>.{png,jpg,jpeg,webp}
+        const eyesDir = path.join(__dirname, 'public', 'eyes');
+        const exts = ['png', 'jpg', 'jpeg', 'webp'];
+        const hasEyeAsset = (pid) => exts.some(ext => fs.existsSync(path.join(eyesDir, `${pid}.${ext}`)));
+        const eligiblePersons = vjlData.filter(p => hasEyeAsset(p.id));
+        if (eligiblePersons.length > 0) {
+          pool = eligiblePersons.map(p => p.id);
+        } else {
+          console.warn('[answer-picker] Aucune personne éligible (oeil) — fallback au pool complet');
+        }
       }
     } catch (e) {
       console.warn('[answer-picker] Filtrage éligibilité échoué — fallback au pool complet:', e?.message || e);
@@ -515,6 +526,32 @@ app.get('/api/image-of-the-day/:discordUserId', async (req, res) => {
     });
   }
 });
+
+  // GET /api/oeil-of-the-day
+  app.get('/api/oeil-of-the-day', (req, res) => {
+    const answers = readAnswers();
+    const today = getAnswerDateForToday();
+    let answerId = null;
+    for (const id in answers) {
+      if (answers[id] && answers[id].date === today) {
+        answerId = id;
+        break;
+      }
+    }
+    if (!answerId || !answers[answerId].modes['oeil']) {
+      return res.status(404).json({ error: 'oeil_not_found' });
+    }
+    const personId = answers[answerId].modes['oeil'].personId;
+    const eyesDir = path.join(__dirname, 'public', 'eyes');
+    const exts = ['webp', 'png', 'jpg', 'jpeg'];
+    let found = null;
+    for (const ext of exts) {
+      const candidate = path.join(eyesDir, `${personId}.${ext}`);
+      if (fs.existsSync(candidate)) { found = `/eyes/${personId}.${ext}`; break; }
+    }
+    if (!found) return res.status(404).json({ error: 'oeil_asset_missing' });
+    return res.json({ localPath: found });
+  });
 
 // GET /api/emojis-of-the-day/:discordUserId
 app.get('/api/emojis-of-the-day/:discordUserId', (req, res) => {

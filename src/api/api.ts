@@ -113,6 +113,13 @@ export async function fetchImageOfTheDay(discordUserId: string) {
   };
 }
 
+// Oeil du jour (déterministe, via asset local)
+export async function fetchOeilOfTheDay(): Promise<{ localPath: string }> {
+  const res = await fetch(`${API_URL}/oeil-of-the-day`);
+  if (!res.ok) throw new ResponseError('Erreur récupération oeil du jour', res.status);
+  return await res.json();
+}
+
 // Emojis du jour (déterministe)
 export async function fetchEmojisOfTheDay(discordUserId: string): Promise<{ emojis: string[] }> {
   const res = await fetch(`${API_URL}/emojis-of-the-day/${discordUserId}`);
