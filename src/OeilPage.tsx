@@ -357,23 +357,27 @@ const OeilPage: React.FC<OeilPageProps> = ({ onWin, onLose, hardcore }) => {
             )}
           </div>
         </div>
-        <div style={{ color: '#979797', fontSize: '.9rem', marginTop: 10 }}>
-          Après {COLORIZE_STEP} essais, l'image passe en couleur.
-        </div>
-        <div style={{ marginTop: 6, display:'flex', justifyContent:'center', gap:6 }}>
-          {Array.from({ length: COLORIZE_STEP }).map((_, i) => (
-            <span
-              key={i}
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: 3,
-                background: guesses.length > i ? '#e6c559' : '#555',
-                boxShadow: '0 1px 2px #0008'
-              }}
-            />
-          ))}
-        </div>
+        {!hardcore && (
+          <>
+            <div style={{ color: '#979797', fontSize: '.9rem', marginTop: 10 }}>
+              Après {COLORIZE_STEP} essais, l'image passe en couleur.
+            </div>
+            <div style={{ marginTop: 6, display:'flex', justifyContent:'center', gap:6 }}>
+              {Array.from({ length: COLORIZE_STEP }).map((_, i) => (
+                <span
+                  key={i}
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 3,
+                    background: guesses.length > i ? '#e6c559' : '#555',
+                    boxShadow: '0 1px 2px #0008'
+                  }}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {!hasWon && (
