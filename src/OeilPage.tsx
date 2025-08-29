@@ -20,6 +20,7 @@ import {
   saveGame as apiSaveGame,
 } from './api/api';
 import { fetchOeilOfTheDay } from './api/api';
+import { fetchRandomOeil } from './api/api';
 
 const GAME_MODE = 'oeil';
 const COLORIZE_STEP = 3; // à partir de X essais, on passe en couleur
@@ -61,6 +62,18 @@ const OeilPage: React.FC<OeilPageProps> = ({ onWin, onLose, hardcore }) => {
       setLoading(true);
       setMaintenance(false);
       try {
+        if (hardcore) {
+          // Mode hardcore: oeil aléatoire, aucune dépendance à la réponse du jour
+          const data = await fetchRandomOeil();
+          setAnswer(data.person || null);
+          setEyeUrl(data.localPath || '');
+          setGuesses([]);
+          setHasWon(false);
+          setShowVictoryBox(false);
+          setGuessCounts({});
+          setLoading(false);
+          return;
+        }
         const today = await fetchTodayFromBackend();
         const answerData = await fetchAnswer(GAME_MODE, today);
         setAnswerId(answerData.answerId);
@@ -85,8 +98,8 @@ const OeilPage: React.FC<OeilPageProps> = ({ onWin, onLose, hardcore }) => {
         if (typeof state.rank === 'number') setMyRank(state.rank);
         if (state.hasWon) setShowVictoryBox(true);
 
-        const counts = await fetchGuessCounts(GAME_MODE);
-        setGuessCounts(counts);
+            const counts = await fetchGuessCounts(GAME_MODE);
+            setGuessCounts(counts);
         await refreshWonModes();
         setLoading(false);
       } catch (err) {

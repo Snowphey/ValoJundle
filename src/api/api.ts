@@ -163,6 +163,13 @@ export async function fetchRandomSplash(): Promise<{ person: VJLPerson, startCoo
   return data;
 }
 
+// Oeil aléatoire (pour le mode hardcore)
+export async function fetchRandomOeil(): Promise<{ person: VJLPerson, localPath: string }> {
+  const res = await fetch(`${API_URL}/random-oeil`);
+  if (!res.ok) throw new ResponseError('Erreur récupération oeil aléatoire', res.status);
+  return await res.json();
+}
+
 export type HardcoreScore = {
   name: string;
   score: number;

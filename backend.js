@@ -1006,6 +1006,24 @@ process.on('SIGTERM', () => {
 // --- MODE HARDCORE : API RANDOM ---
 
 
+// GET /api/random-oeil
+app.get('/api/random-oeil', (req, res) => {
+  const vjlData = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'vjl.json'), 'utf8'));
+  const eyesDir = path.join(__dirname, 'public', 'eyes');
+  const exts = ['webp', 'png', 'jpg', 'jpeg'];
+  const hasEyeAsset = (pid) => exts.some(ext => fs.existsSync(path.join(eyesDir, `${pid}.${ext}`)));
+  const pool = vjlData.filter(p => hasEyeAsset(p.id));
+  if (!pool.length) return res.status(404).json({ error: 'no_random_oeil' });
+  const person = pool[Math.floor(Math.random() * pool.length)];
+  let found = null;
+  for (const ext of exts) {
+    const candidate = path.join(eyesDir, `${person.id}.${ext}`);
+    if (fs.existsSync(candidate)) { found = `/eyes/${person.id}.${ext}`; break; }
+  }
+  if (!found) return res.status(404).json({ error: 'oeil_asset_missing' });
+  res.json({ person, localPath: found });
+});
+
 // GET /api/random-citation
 app.get('/api/random-citation', (req, res) => {
   const vjlData = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'vjl.json'), 'utf8'));
