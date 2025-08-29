@@ -208,8 +208,46 @@ function getAnswerForDay(mode, date, vjlData, createIfMissing = true) {
   }
   if (!answers[id].modes[mode]) {
     if (!createIfMissing) return null;
-    // Choisir n'importe qui dans vjlData, sans restriction
+    // Choisir une personne éligible selon le mode
     let pool = vjlData.map(p => p.id);
+
+    try {
+      if (mode === 'citation') {
+        // Filtrer sur les utilisateurs ayant au moins une citation (message non vide)
+        const citationsPath = path.join(__dirname, 'discord', 'citations.json');
+        const citations = JSON.parse(fs.readFileSync(citationsPath, 'utf8'));
+        const eligibleUserIds = new Set(
+          citations
+            .filter(c => c && c.userId && Array.isArray(c.messages) && c.messages.some(m => m && m.content && m.content.trim().length > 0))
+            .map(c => String(c.userId))
+        );
+        const eligiblePersons = vjlData.filter(p => p.discordUserId && eligibleUserIds.has(String(p.discordUserId)));
+        if (eligiblePersons.length > 0) {
+          pool = eligiblePersons.map(p => p.id);
+        } else {
+          console.warn('[answer-picker] Aucune personne éligible (citation) — fallback au pool complet');
+        }
+      } else if (mode === 'image') {
+        // Filtrer sur les utilisateurs ayant au moins une image envoyée (attachmentsCount > 0)
+        const attachmentsPath = path.join(__dirname, 'discord', 'attachments.json');
+        const attachments = JSON.parse(fs.readFileSync(attachmentsPath, 'utf8'));
+        const eligibleUserIds = new Set(
+          attachments
+            .filter(a => a && a.userId && Number(a.attachmentsCount) > 0)
+            .map(a => String(a.userId))
+        );
+        const eligiblePersons = vjlData.filter(p => p.discordUserId && eligibleUserIds.has(String(p.discordUserId)));
+        if (eligiblePersons.length > 0) {
+          pool = eligiblePersons.map(p => p.id);
+        } else {
+          console.warn('[answer-picker] Aucune personne éligible (image) — fallback au pool complet');
+        }
+      }
+    } catch (e) {
+      console.warn('[answer-picker] Filtrage éligibilité échoué — fallback au pool complet:', e?.message || e);
+    }
+
+    // Sélection finale
     let candidate = pool[Math.floor(Math.random() * pool.length)];
     answers[id].modes[mode] = { personId: candidate };
     writeAnswers(answers);
