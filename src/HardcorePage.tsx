@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import CitationPage from './CitationPage';
 import ImagePage from './ImagePage';
 import EmojiPage from './EmojiPage';
@@ -29,6 +29,11 @@ const HardcorePage: React.FC = () => {
   const [playerName, setPlayerName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [lastCorrectAnswer, setLastCorrectAnswer] = useState<string | null>(null);
+  const [answerRevealed, setAnswerRevealed] = useState(false);
+  // Identifiant de manche pour forcer le remount du composant du mode (rafraîchir question et vider les guesses)
+  const [roundId, setRoundId] = useState(0);
+  const gameOverRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch leaderboard
   useEffect(() => {
@@ -37,28 +42,49 @@ const HardcorePage: React.FC = () => {
 
   const handleWin = useCallback(() => {
     setScore(prev => prev + 1);
-    // On force le changement de mode pour ne pas répéter le même deux fois de suite
-    let next;
-    do {
-      next = getRandomMode();
-    } while (next.name === modeKey && MODES.length > 1);
+    setLastCorrectAnswer(null);
+  setAnswerRevealed(false);
+    // Choix libre du prochain mode (peut être identique), mais on force un remount via roundId
+    const next = getRandomMode();
     setCurrentMode(next);
     setModeKey(next.name);
+    setRoundId(r => r + 1);
   }, [modeKey]);
 
-  const handleLose = useCallback(() => {
+  const handleLose = useCallback((correctAnswer?: string) => {
     setGameOver(true);
     setShowNameInput(true);
+    setLastCorrectAnswer(correctAnswer ?? null);
+  setAnswerRevealed(false);
+  // Révélation différée de la bonne réponse (et bouton rejouer)
+  setTimeout(() => setAnswerRevealed(true), 1000);
   }, []);
 
   const handleRestart = () => {
     setScore(0);
     setGameOver(false);
-    setCurrentMode(getRandomMode());
+    // On peut retomber sur le même mode, mais on remonte le composant pour réinitialiser la question/guesses
+    const next = getRandomMode();
+    setCurrentMode(next);
+    setModeKey(next.name);
+    setRoundId(r => r + 1);
     setShowNameInput(false);
     setPlayerName('');
     setSubmitted(false);
+  setLastCorrectAnswer(null);
+  setAnswerRevealed(false);
   };
+
+  // Scroll automatique vers la zone Game Over quand elle apparaît
+  useEffect(() => {
+    if (gameOver && answerRevealed && gameOverRef.current) {
+      // léger timeout pour s'assurer que le DOM est peint
+      const t = setTimeout(() => {
+        gameOverRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
+      return () => clearTimeout(t);
+    }
+  }, [gameOver, answerRevealed]);
 
   const getHardcoreShareText = (score: number) => {
     return `J'ai fait un score de ${score} en mode Hardcore sur #ValoJundle ! ⚔️\n\n${URL}`;
@@ -128,56 +154,68 @@ const HardcorePage: React.FC = () => {
     </div>
   );
 
-  if (gameOver) {
-    return (
-      <div style={{ textAlign: 'center' }}>
-        <h2>Game Over !</h2>
-        <p>Votre score : <b>{score}</b></p>
-        {showNameInput && !submitted && (
-          <div style={{ margin: '20px 0' }}>
-            <input
-              type="text"
-              placeholder="Votre nom ou pseudo"
-              value={playerName}
-              onChange={e => setPlayerName(e.target.value)}
-              maxLength={20}
-              style={{ padding: 6, borderRadius: 4, border: '1px solid #ccc', marginBottom: 24 }}
-              disabled={submitting}
-            />
-            <div>        
-                <button onClick={handleSubmitScore} disabled={submitting || !playerName.trim()}>
-                {submitting ? 'Envoi...' : 'Envoyer le score'}
-                </button>
-            </div>
-            <div className="victory-history-box" style={{ marginBottom: 24 }}>
-                <div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word', fontSize: '1.08rem', marginBottom: 8 }}>{getHardcoreShareText(score)}</div>
-                <button className="victory-history-copy-btn" onClick={handleCopy} type="button">
-                <span style={{display:'flex',alignItems:'center',gap:6}}>
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{verticalAlign:'middle'}} xmlns="http://www.w3.org/2000/svg">
-                    <rect x="5" y="3" width="12" height="14" rx="3" fill={historyCopied ? '#ffd700' : '#e6c559'} stroke="#3a2e14" strokeWidth="1.5"/>
-                    <rect x="2" y="6" width="12" height="11" rx="2.5" fill="none" stroke="#bfa23a" strokeWidth="1.2"/>
-                    </svg>
-                    {historyCopied ? 'Copié !' : 'Copier'}
-                </span>
-                </button>
-            </div>
-          </div>
-        )}
-        <button onClick={handleRestart} style={{ marginLeft: 10 }}>Rejouer</button>
-        {renderLeaderboard()}
-      </div>
-    );
-  }
-
-  const ModeComponent = currentMode.component;
+  const ModeComponent = currentMode.component as React.FC<{
+    onWin?: () => void;
+    onLose?: (correctAnswer?: string) => void;
+    hardcore?: boolean;
+    disabled?: boolean;
+    revealCorrectAnswer?: boolean;
+  }>;
   return (
     <div>
-      <h2>Mode Hardcore</h2>
       <p>Score actuel : {score}</p>
-      {/* On force le remount du composant uniquement quand le mode change */}
-      {!gameOver && (
-        <ModeComponent key={modeKey} onWin={handleWin} onLose={handleLose} hardcore />
+      {/* On garde le composant du mode visible même après la défaite */}
+      <ModeComponent
+        key={`${modeKey}-${roundId}`}
+        onWin={handleWin}
+        onLose={handleLose}
+        hardcore
+        disabled={gameOver}
+        revealCorrectAnswer={gameOver && answerRevealed}
+      />
+
+      {/* Zone Game Over persistante sous le puzzle */}
+      {gameOver && answerRevealed && (
+        <div ref={gameOverRef} style={{ textAlign: 'center', marginTop: 18 }}>
+          <div style={{ fontSize: '1.4rem', color: '#f46e6e', fontWeight: 800, marginBottom: 6 }}>Perdu</div>
+          <p>Votre score : <b>{score}</b></p>
+          {lastCorrectAnswer && (
+            <p>La bonne réponse était : <b>{lastCorrectAnswer}</b></p>
+          )}
+          {showNameInput && !submitted && (
+            <div style={{ margin: '20px 0' }}>
+              <input
+                type="text"
+                placeholder="Votre nom ou pseudo"
+                value={playerName}
+                onChange={e => setPlayerName(e.target.value)}
+                maxLength={20}
+                style={{ padding: 6, borderRadius: 4, border: '1px solid #ccc', marginBottom: 24 }}
+                disabled={submitting}
+              />
+              <div>
+                <button onClick={handleSubmitScore} disabled={submitting || !playerName.trim()}>
+                  {submitting ? 'Envoi...' : 'Envoyer le score'}
+                </button>
+              </div>
+              <div className="victory-history-box" style={{ marginBottom: 24 }}>
+                <div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word', fontSize: '1.08rem', marginBottom: 8 }}>{getHardcoreShareText(score)}</div>
+                <button className="victory-history-copy-btn" onClick={handleCopy} type="button">
+                  <span style={{display:'flex',alignItems:'center',gap:6}}>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{verticalAlign:'middle'}} xmlns="http://www.w3.org/2000/svg">
+                      <rect x="5" y="3" width="12" height="14" rx="3" fill={historyCopied ? '#ffd700' : '#e6c559'} stroke="#3a2e14" strokeWidth="1.5"/>
+                      <rect x="2" y="6" width="12" height="11" rx="2.5" fill="none" stroke="#bfa23a" strokeWidth="1.2"/>
+                    </svg>
+                    {historyCopied ? 'Copié !' : 'Copier'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+          <button onClick={handleRestart} style={{ marginLeft: 10 }}>Rejouer</button>
+        </div>
       )}
+
       {renderLeaderboard()}
     </div>
   );

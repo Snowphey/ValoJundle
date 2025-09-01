@@ -28,11 +28,13 @@ const REVEAL_STEPS = 3;
 
 interface EmojiPageProps {
   onWin?: () => void;
-  onLose?: () => void;
+  onLose?: (correctAnswer?: string) => void;
   hardcore?: boolean;
+  disabled?: boolean;
+  revealCorrectAnswer?: boolean;
 }
 
-const EmojiPage: React.FC<EmojiPageProps> = ({ onWin, onLose, hardcore }) => {
+const EmojiPage: React.FC<EmojiPageProps> = ({ onWin, onLose, hardcore, disabled, revealCorrectAnswer }) => {
   const [answer, setAnswer] = useState<VJLPerson | null>(null);
   const [answerId, setAnswerId] = useState<number | null>(null);
   const [guesses, setGuesses] = useState<number[]>([]);
@@ -176,7 +178,8 @@ const EmojiPage: React.FC<EmojiPageProps> = ({ onWin, onLose, hardcore }) => {
       } else {
         setLastWrongId(person.id);
         if (hardcore && onLose) {
-          onLose();
+          const correctName = answer?.prenom ?? '';
+          onLose(correctName);
         } else {
           apiSaveGame(GAME_MODE, newGuesses, false);
         }
@@ -366,7 +369,7 @@ const EmojiPage: React.FC<EmojiPageProps> = ({ onWin, onLose, hardcore }) => {
         </div>
       </div>
       {/* Input de guess */}
-      {!hasWon && (
+  {!hasWon && !disabled && (
         <GuessInput mode={GAME_MODE} onGuess={handleGuess} hardcore={hardcore} />
       )}
       {/* Compteur de gagnants */}
@@ -388,6 +391,7 @@ const EmojiPage: React.FC<EmojiPageProps> = ({ onWin, onLose, hardcore }) => {
         lastCorrectId={lastCorrectId}
         answerId={answer.id}
         hardcore={hardcore}
+        revealAnswer={hardcore && revealCorrectAnswer ? answer : undefined}
       />
       <div style={{ marginTop: 36 }} />
       {/* Victoire */}

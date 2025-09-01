@@ -8,9 +8,10 @@ interface GuessInputProps {
   onGuess?: (person: VJLPerson) => void;
   mode: string;
   hardcore?: boolean;
+  anchorId?: string;
 }
 
-const GuessInput: React.FC<GuessInputProps> = ({ onGuess, mode, hardcore }) => {
+const GuessInput: React.FC<GuessInputProps> = ({ onGuess, mode, hardcore, anchorId }) => {
   const [input, setInput] = useState("");
   const [suggestions, setSuggestions] = useState<VJLPerson[]>([]);
   const [guessedPersonIds, setGuessedPersonIds] = useState<number[]>([]);
@@ -130,7 +131,7 @@ const GuessInput: React.FC<GuessInputProps> = ({ onGuess, mode, hardcore }) => {
   };
 
   return (
-    <form className="guess-input" onSubmit={handleSubmit} autoComplete="off">
+    <form id={anchorId} className="guess-input" onSubmit={handleSubmit} autoComplete="off">
       <div className="guess-input-row">
         <input
           ref={inputRef}

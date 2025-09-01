@@ -10,9 +10,11 @@ interface GuessHistoryProps {
   lastCorrectId?: number;
   answerId?: number; // id de la bonne réponse
   hardcore?: boolean;
+  // Optionnel: afficher la tuile de la bonne réponse (même si non devinée)
+  revealAnswer?: VJLPerson;
 }
 
-const GuessHistory: React.FC<GuessHistoryProps> = ({ guesses, guessCounts, lastWrongId, lastCorrectId, answerId, hardcore }) => {
+const GuessHistory: React.FC<GuessHistoryProps> = ({ guesses, guessCounts, lastWrongId, lastCorrectId, answerId, hardcore, revealAnswer }) => {
   const [shakeId, setShakeId] = useState<number | null>(null);
   const [tadaId, setTadaId] = useState<number | null>(null);
   useEffect(() => {
@@ -29,7 +31,8 @@ const GuessHistory: React.FC<GuessHistoryProps> = ({ guesses, guessCounts, lastW
       return () => clearTimeout(timeout);
     }
   }, [lastCorrectId]);
-  if (!guesses.length) return null;
+  const shouldShowReveal = !!revealAnswer && !guesses.some(g => g.id === revealAnswer.id);
+  if (!guesses.length && !shouldShowReveal) return null;
   return (
     <div className="guess-history">
       {guesses.slice().reverse().map((person) => {
@@ -59,6 +62,22 @@ const GuessHistory: React.FC<GuessHistoryProps> = ({ guesses, guessCounts, lastW
           </div>
         );
       })}
+      {shouldShowReveal && (
+        <div key={revealAnswer!.id} className={'guess-box tada'}>
+          {!hardcore && (
+            <div className="guess-people">
+              <Tooltip content="Le nombre de joueurs qui ont également essayé ce membre" direction='top'>
+                  <img src="/people.png" alt="personnes" width={26} height={26} style={{ display: 'block', margin: '0 auto' }} />
+                  <div className="guess-people-count">{guessCounts[revealAnswer!.id] ?? 0}</div>
+              </Tooltip>
+            </div>
+          )}
+          <div className="guess-center">
+            <img src={revealAnswer!.avatarUrl ? `${revealAnswer!.avatarUrl}?v=${new Date().toISOString().slice(0,10)}` : ''} alt={revealAnswer!.prenom} className="guess-pfp" style={{ objectFit: 'cover', background: '#222' }} />
+            <div className="guess-name">{revealAnswer!.prenom}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -9,6 +9,7 @@ import AnimatedCounter from './components/AnimatedCounter';
 import AllModesShareBox from './components/AllModesShareBox';
 import YesterdayAnswerBox from './components/YesterdayAnswerBox';
 import { buildShareText } from './utils/buildShareText';
+import HoverZoom from './components/HoverZoom';
 import {
   fetchAnswer,
   fetchAnswerIfExists,
@@ -27,11 +28,13 @@ const COLORIZE_STEP = 3; // à partir de X essais, on passe en couleur
 
 interface OeilPageProps {
   onWin?: () => void;
-  onLose?: () => void;
+  onLose?: (correctAnswer?: string) => void;
   hardcore?: boolean;
+  disabled?: boolean;
+  revealCorrectAnswer?: boolean;
 }
 
-const OeilPage: React.FC<OeilPageProps> = ({ onWin, onLose, hardcore }) => {
+const OeilPage: React.FC<OeilPageProps> = ({ onWin, onLose, hardcore, disabled, revealCorrectAnswer }) => {
   const [answer, setAnswer] = useState<VJLPerson | null>(null);
   const [answerId, setAnswerId] = useState<number | null>(null);
   const [guesses, setGuesses] = useState<number[]>([]);
@@ -184,7 +187,8 @@ const OeilPage: React.FC<OeilPageProps> = ({ onWin, onLose, hardcore }) => {
         setLastWrongId(person.id);
         if (hardcore && onLose) {
           // En hardcore: pas de sauvegarde, on déclenche juste la défaite
-          onLose();
+          const correctName = answer?.prenom ?? '';
+          onLose(correctName);
         } else {
           apiSaveGame(GAME_MODE, newGuesses, false).catch(() => {});
         }
@@ -328,7 +332,7 @@ const OeilPage: React.FC<OeilPageProps> = ({ onWin, onLose, hardcore }) => {
 
   return (
     <div>
-      <div style={{
+  <div style={{
         background: 'rgba(24,28,36,0.92) center/cover no-repeat',
         borderRadius: 18,
         border: '2px solid #af9767',
@@ -344,18 +348,36 @@ const OeilPage: React.FC<OeilPageProps> = ({ onWin, onLose, hardcore }) => {
         <div style={{ fontSize: '1.25rem', marginBottom: 8, fontWeight: 700 }}>À qui appartient cet oeil ?</div>
         <div style={{ display:'flex', justifyContent:'center' }}>
           {/* L'image peut 404 si manquante: on affiche un placeholder */}
-          <div style={{ maxWidth: 600, width: '100%', borderRadius: 12, background:'#222', boxShadow:'0 2px 8px #0007' }}>
-            {eyeUrl ? (
-              <img
-                src={eyeUrl}
-                alt="Oeil du jour"
-                onError={() => setEyeUrl('')}
-                style={{ display:'block', maxWidth: 600, width:'100%', height:'auto', objectFit:'contain', borderRadius: 12, filter: imgFilter, transition:'filter .3s ease' }}
-              />
-            ) : (
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', width:'100%', minHeight: 140, color:'#aaa' }}>Indisponible</div>
-            )}
-          </div>
+          <HoverZoom style={{ borderRadius: 12 }}>
+            <div style={{ maxWidth: 600, width: '100%', borderRadius: 12, background:'#222', boxShadow:'0 2px 8px #0007', minHeight: 140, overflow:'hidden' }}>
+              {eyeUrl ? (
+                <img
+                  src={eyeUrl}
+                  alt="Oeil du jour"
+                  onError={() => setEyeUrl('')}
+                  style={{
+                    display:'block',
+                    maxWidth: 600,
+                    width:'100%',
+                    height:'auto',
+                    maxHeight: 360,
+                    objectFit:'contain',
+                    borderRadius: 12,
+                    filter: imgFilter,
+                    transition:'filter .3s ease'
+                  }}
+                  onLoad={() => {
+                    const anchor = document.getElementById('guess-input-anchor');
+                    if (anchor) {
+                      anchor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                  }}
+                />
+              ) : (
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', width:'100%', minHeight: 140, color:'#aaa' }}>Indisponible</div>
+              )}
+            </div>
+          </HoverZoom>
         </div>
         {!hardcore && (
           <>
@@ -380,8 +402,8 @@ const OeilPage: React.FC<OeilPageProps> = ({ onWin, onLose, hardcore }) => {
         )}
       </div>
 
-      {!hasWon && (
-        <GuessInput mode={GAME_MODE} onGuess={handleGuess} hardcore={hardcore} />
+      {!hasWon && !disabled && (
+        <GuessInput anchorId="guess-input-anchor" mode={GAME_MODE} onGuess={handleGuess} hardcore={hardcore} />
       )}
 
       {!hardcore && (
@@ -402,6 +424,7 @@ const OeilPage: React.FC<OeilPageProps> = ({ onWin, onLose, hardcore }) => {
         lastCorrectId={lastCorrectId}
         answerId={answer?.id}
         hardcore={hardcore}
+        revealAnswer={hardcore && revealCorrectAnswer ? answer ?? undefined : undefined}
       />
 
       <div style={{ marginTop: 36 }} />

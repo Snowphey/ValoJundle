@@ -11,6 +11,7 @@ import { buildShareText } from './utils/buildShareText';
 import { loadGame as apiLoadGame, saveGame as apiSaveGame, fetchAnswer, fetchAnswerIfExists, fetchWinnersCount, fetchTodayFromBackend, fetchImageOfTheDay, fetchGuessCounts, fetchCronReadyFromBackend, fetchRandomImage } from './api/api';
 import AllModesShareBox from './components/AllModesShareBox';
 import YesterdayAnswerBox from './components/YesterdayAnswerBox';
+import HoverZoom from './components/HoverZoom';
 
 const GAME_MODE = 'image';
 
@@ -47,11 +48,13 @@ const GAME_MODE = 'image';
 
 interface ImagePageProps {
   onWin?: () => void;
-  onLose?: () => void;
+  onLose?: (correctAnswer?: string) => void;
   hardcore?: boolean;
+  disabled?: boolean;
+  revealCorrectAnswer?: boolean;
 }
 
-const ImagePage: React.FC<ImagePageProps> = ({ onWin, onLose, hardcore }) => {
+const ImagePage: React.FC<ImagePageProps> = ({ onWin, onLose, hardcore, disabled, revealCorrectAnswer }) => {
   const [answer, setAnswer] = useState<VJLPerson | null>(null);
   const [guesses, setGuesses] = useState<number[]>([]);
   const [hasWon, setHasWon] = useState(false);
@@ -199,7 +202,8 @@ const ImagePage: React.FC<ImagePageProps> = ({ onWin, onLose, hardcore }) => {
       } else {
         setLastWrongId(person.id);
         if (hardcore && onLose) {
-          onLose();
+          const correctName = answer?.prenom ?? '';
+          onLose(correctName);
         } else {
           apiSaveGame(GAME_MODE, newGuesses, false);
         }
@@ -358,17 +362,33 @@ const ImagePage: React.FC<ImagePageProps> = ({ onWin, onLose, hardcore }) => {
         fontFamily: 'Friz Quadrata Std, Mobilo, Helvetica, Arial, sans-serif',
       }}>
         <div style={{ fontSize: '1.25rem', marginBottom: 8, fontWeight: 700 }}>Qui a envoyé l'image :</div>
-        <div style={{ fontSize: '2rem', fontStyle: 'italic', margin: '18px 0', lineHeight: 1.4, whiteSpace: 'pre-line' }}>
-          <img
-            src={image.displayUrl}
-            alt="Image du jour"
-            style={{ maxWidth: 600, width: '100%', borderRadius: 12, boxShadow: '0 2px 8px #0007' }}
-          />
+        <div style={{ fontSize: '2rem', fontStyle: 'italic', margin: '18px 0', lineHeight: 1.4, whiteSpace: 'pre-line', minHeight: 180 }}>
+          <HoverZoom style={{ borderRadius: 12 }}>
+            <img
+              src={image.displayUrl}
+              alt="Image du jour"
+              style={{
+                maxWidth: 600,
+                width: '100%',
+                height: 'auto',
+                maxHeight: 360,
+                objectFit: 'contain',
+                borderRadius: 12,
+                boxShadow: '0 2px 8px #0007'
+              }}
+              onLoad={() => {
+                const anchor = document.getElementById('guess-input-anchor');
+                if (anchor) {
+                  anchor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }}
+            />
+          </HoverZoom>
         </div>
       </div>
       {/* Input de guess */}
-      {!hasWon && (
-        <GuessInput mode={GAME_MODE} onGuess={handleGuess} hardcore={hardcore} />
+      {!hasWon && !disabled && (
+        <GuessInput anchorId="guess-input-anchor" mode={GAME_MODE} onGuess={handleGuess} hardcore={hardcore} />
       )}
       {/* Compteur de gagnants (mocké) */}
       {!hardcore && (
@@ -389,6 +409,7 @@ const ImagePage: React.FC<ImagePageProps> = ({ onWin, onLose, hardcore }) => {
         lastCorrectId={lastCorrectId}
         answerId={answer.id}
         hardcore={hardcore}
+        revealAnswer={hardcore && revealCorrectAnswer ? answer : undefined}
       />
       <div style={{ marginTop: 36 }} />
       {/* Victoire */}

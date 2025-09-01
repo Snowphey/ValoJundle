@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import GuessInput from './components/GuessInput';
 import './ValoJundleTheme.css';
 import type { VJLPerson } from './types/VJLPerson';
@@ -47,11 +47,13 @@ const GAME_MODE = 'citation';
 
 interface CitationPageProps {
   onWin?: () => void;
-  onLose?: () => void;
+  onLose?: (correctAnswer?: string) => void;
   hardcore?: boolean;
+  disabled?: boolean;
+  revealCorrectAnswer?: boolean;
 }
 
-const CitationPage: React.FC<CitationPageProps> = ({ onWin, onLose, hardcore }) => {
+const CitationPage: React.FC<CitationPageProps> = ({ onWin, onLose, hardcore, disabled, revealCorrectAnswer }) => {
   const [answer, setAnswer] = useState<VJLPerson | null>(null);
   const [guesses, setGuesses] = useState<number[]>([]);
   const [hasWon, setHasWon] = useState(false);
@@ -72,6 +74,19 @@ const CitationPage: React.FC<CitationPageProps> = ({ onWin, onLose, hardcore }) 
   const [showVictoryBox, setShowVictoryBox] = useState(false);
   const [maintenance, setMaintenance] = useState(false);
   const { vjlData, loading: loadingVJLData, error } = useVJLData();
+  // Taille de police basée uniquement sur la longueur du texte
+  const quoteFontPx = useMemo(() => {
+    const content: string = mainMessage?.content || '';
+    const len = content.length;
+    if (len > 420) return 18;
+    if (len > 340) return 20;
+    if (len > 280) return 22;
+    if (len > 220) return 24;
+    if (len > 160) return 26;
+    if (len > 120) return 28;
+    return 32; // ≈ 2rem
+  }, [mainMessage?.content]);
+  const maxQuoteHeight = 280; // px
 
   // Chargement initial depuis le backend
   useEffect(() => {
@@ -200,7 +215,8 @@ const CitationPage: React.FC<CitationPageProps> = ({ onWin, onLose, hardcore }) 
       } else {
         setLastWrongId(person.id);
         if (hardcore && onLose) {
-          onLose();
+          const correctName = answer?.prenom ?? '';
+          onLose(correctName);
         } else {
           apiSaveGame(GAME_MODE, newGuesses, false);
         }
@@ -263,6 +279,7 @@ const CitationPage: React.FC<CitationPageProps> = ({ onWin, onLose, hardcore }) 
     runTimer();
     return () => { cancelled = true; };
   }, [hasWon]);
+
 
   // Gestion du copier (texte à partager)
   const handleCopy = async () => {
@@ -359,13 +376,23 @@ const CitationPage: React.FC<CitationPageProps> = ({ onWin, onLose, hardcore }) 
         fontFamily: 'Friz Quadrata Std, Mobilo, Helvetica, Arial, sans-serif',
       }}>
         <div style={{ fontSize: '1.25rem', marginBottom: 8, fontWeight: 700 }}>Qui a dit :</div>
-        <div style={{ fontSize: '2rem', fontStyle: 'italic', margin: '18px 0', lineHeight: 1.4, whiteSpace: 'pre-line' }}>
+  <div
+          style={{
+            fontSize: `${quoteFontPx}px`,
+            fontStyle: 'italic',
+            margin: '18px 0',
+            lineHeight: 1.4,
+            whiteSpace: 'pre-line',
+            maxHeight: maxQuoteHeight,
+            overflow: 'hidden',
+          }}
+        >
           {/* Affichage de la citation avec rendu des émojis custom Discord */}
           “ <span dangerouslySetInnerHTML={{ __html: renderDiscordEmojis(mainMessage.content) }} /> ”
         </div>
       </div>
       {/* Input de guess */}
-      {!hasWon && (
+  {!hasWon && !disabled && (
         <GuessInput mode={GAME_MODE} onGuess={handleGuess} hardcore={hardcore} />
       )}
       {/* Compteur de gagnants (mocké) */}
@@ -387,6 +414,7 @@ const CitationPage: React.FC<CitationPageProps> = ({ onWin, onLose, hardcore }) 
         lastCorrectId={lastCorrectId}
         answerId={answer.id}
         hardcore={hardcore}
+        revealAnswer={hardcore && revealCorrectAnswer ? answer : undefined}
       />
       <div style={{ marginTop: 36 }} />
       {/* Victoire */}
