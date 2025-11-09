@@ -340,6 +340,11 @@ const SplashPage: React.FC<SplashPageProps> = ({ onWin, onLose, hardcore }) => {
           <img
             src={splash}
             alt="Splash du jour"
+            draggable={false}
+            onDragStart={(e) => e.preventDefault()}
+            onContextMenu={(e) => e.preventDefault()}
+            onMouseDown={(e) => { if ((e as React.MouseEvent).button === 1) (e as React.MouseEvent).preventDefault(); }}
+            onAuxClick={(e) => { if ((e as React.MouseEvent).button === 1) (e as React.MouseEvent).preventDefault(); }}
             style={{
               width: '100%',
               height: '100%',

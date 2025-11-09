@@ -367,6 +367,11 @@ const ImagePage: React.FC<ImagePageProps> = ({ onWin, onLose, hardcore, disabled
             <img
               src={image.displayUrl}
               alt="Image du jour"
+              draggable={false}
+              onDragStart={(e) => e.preventDefault()}
+              onContextMenu={(e) => e.preventDefault()}
+              onMouseDown={(e) => { if ((e as React.MouseEvent).button === 1) (e as React.MouseEvent).preventDefault(); }}
+              onAuxClick={(e) => { if ((e as React.MouseEvent).button === 1) (e as React.MouseEvent).preventDefault(); }}
               style={{
                 maxWidth: 600,
                 width: '100%',

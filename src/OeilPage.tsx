@@ -354,6 +354,11 @@ const OeilPage: React.FC<OeilPageProps> = ({ onWin, onLose, hardcore, disabled, 
                 <img
                   src={eyeUrl}
                   alt="Oeil du jour"
+                  draggable={false}
+                  onDragStart={(e) => e.preventDefault()}
+                  onContextMenu={(e) => e.preventDefault()}
+                  onMouseDown={(e) => { if ((e as React.MouseEvent).button === 1) (e as React.MouseEvent).preventDefault(); }}
+                  onAuxClick={(e) => { if ((e as React.MouseEvent).button === 1) (e as React.MouseEvent).preventDefault(); }}
                   onError={() => setEyeUrl('')}
                   style={{
                     display:'block',
